@@ -2,8 +2,18 @@ from typing import Final
 import os
 from dotenv import load_dotenv
 import asyncio
-from discord import Intents, Client, Message, Embed
+import discord
+from discord import Intents, Client, Message, Embed, VoiceChannel, Guild, Member, File
+# from discord_slash import SlashCommand, SlashContext
+# from discord_slash.utils.manage_commands import create_choice, create_option
 from responses import get_response
+
+from discord.ext import commands
+from discord import FFmpegPCMAudio
+import random
+from easy_pil import Editor, load_image_async, Font
+
+# pip install easy_pil
 
 # STEP 0: LOAD OUR TOKEN FROM SOMEWHERE SAFE
 load_dotenv()
@@ -11,9 +21,107 @@ TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
 
 # STEP 1: BOT SETUP
 intents: Intents = Intents.default()
-intents.message_content = True  # NOQA
+intents.message_content = True
 client: Client = Client(intents=intents)
+client = commands.Bot(command_prefix='/', intents=intents)
 
+
+@client.event
+async def on_member_join(member):
+    channel = member.guild.system_channel
+
+    background = Editor("pic1.jpg")
+    profile_image = await load_image_async(str(member.avatar.url))
+
+    profile = Editor(profile_image).resize((150,150)).circle_image()
+    poppins = Font.poppins(size=50, variant="bold")
+
+    poppins_small = Font.poppins(size=20, variant="light")
+
+    background.paste(profile,(325,90))
+    background.ellipse((325,90), 150, 150, outline="white", stroke_width=5)
+
+    background.text((400,260), f"WELCOME TO MY WORLD {member.guild.name}", color="white", font=poppins, align="center")
+    background.text((400,325), f"{member.name}#{member.discriminator}", color="white", font=poppins_small, align="center")
+
+    file = File(fp=background.image_bytes, filename="pic2.jpg")
+    await channel.send(f"Hello {member.mention}! Welcome To **{member.guild.name} For more information go to #get-roles**")
+    await channel.send(file=file)
+
+
+@client.tree.command(name="kwhy",description="Kwhy is gud")
+async def kwhy_command(interaction:discord.Interaction):
+    await interaction.response.send_message("Hello Minna sama")
+
+#pip install pynacl
+
+@client.tree.command(name="play-music", description="Play music in the voice channel")
+async def play_music_command(ctx: commands.Context):
+    voice_client = ctx.voice_client
+    if not voice_client or not voice_client.is_connected():
+        return await ctx.send("I'm not connected to a voice channel. Use /join-voice to invite me.")
+    if voice_client.is_playing():
+        return await ctx.send("I'm already playing music.")
+    audio_source = FFmpegPCMAudio('mantap.mp3')
+    voice_client.play(audio_source, after=lambda e: print('Player error: %s' % e) if e else None)
+    await ctx.send("Now playing music!")
+
+@client.tree.command(name="leave-voice", description="Leave the voice channel")
+async def leave_voice_command(ctx: commands.Context):
+    voice_client = ctx.voice_client
+    if voice_client and voice_client.is_connected():
+        await voice_client.disconnect()
+        await ctx.send("Bot has left the voice channel.")
+    else:
+        await ctx.send("Bot is not connected to a voice channel.")
+
+@client.tree.command(name="join-voice", description="Invite Kwhy to Voice Channel")
+async def join_voice_command(interaction: discord.Interaction):
+    member = interaction.user
+    if isinstance(member, discord.Member) and member.guild:
+        if member.voice and member.voice.channel:
+            voice_channel = member.voice.channel
+            await voice_channel.connect()
+            try:
+                await interaction.response.send_message("Bot has been invited to the voice channel.")
+            except discord.errors.NotFound:
+                print("Interaction not found.")
+            return
+    await interaction.response.send_message("You must be connected to a voice channel to invite the bot.")
+
+@client.tree.command(name="marketplace", description="Access the marketplace")
+async def marketplace_command(interaction: discord.Interaction):
+    items = [
+        {'name': 'Item 1', 'price': 10, 'emoji': '⚔️'},
+        {'name': 'Item 2', 'price': 20, 'emoji': '🛡️'},
+        {'name': 'Item 3', 'price': 30, 'emoji': '🔮'}
+    ]
+
+    if interaction.message:
+        embed = Embed(title='Marketplace', description='Welcome to the marketplace!')
+        for item in items:
+            embed.add_field(name=f"{item['emoji']} {item['name']}", value=f"Price: ${item['price']}", inline=False)
+
+        await interaction.response.send_message(embed=embed)
+
+        for item in items:
+            await interaction.message.add_reaction(item['emoji'])
+
+        await interaction.followup.send("React to the item you want to buy.")
+    else:
+        print("Message for interaction not found.")
+
+# Fungsi untuk roll dice
+def roll_dice(num_dice: int, num_faces: int) -> str:
+    if num_dice != 1 or num_faces != 6:
+        return "Invalid dice configuration. Please roll one 6-faced die."
+    roll_result = random.randint(1, 6)
+    return f"The result of rolling a 6-sided die: {roll_result}"
+
+@client.tree.command(name="roll-dice", description="Roll a six-sided die")
+async def roll_dice_command(interaction: discord.Interaction, num_dice: int = 1, num_faces: int = 6):
+    result = roll_dice(num_dice, num_faces)
+    await interaction.response.send_message(result)
 
 # STEP 2: MESSAGE FUNCTIONALITY
 async def send_message(message: Message, user_message: str) -> None:
@@ -26,9 +134,6 @@ async def send_message(message: Message, user_message: str) -> None:
 
     try:
         response: str = get_response(user_message)
-        # Check if the message is a buy command
-        if user_message.startswith('!buy'):
-            await handle_marketplace_command(message)
         await message.author.send(response) if is_private else await message.channel.send(response)
     except Exception as e:
         print(e)
@@ -38,6 +143,39 @@ async def send_message(message: Message, user_message: str) -> None:
 @client.event
 async def on_ready() -> None:
     print(f'{client.user} is now running!')
+    await client.tree.sync()
+
+    # # Find the voice channel the bot is in
+    # for guild in client.guilds:
+    #     for vc_state in guild.voice_states:
+    #         if vc_state.bot and vc_state.channel:
+    #             voice_channel = vc_state.channel
+    #             break
+    #     else:
+    #         continue
+    #     break
+
+    voice_channel = discord.utils.get(client.get_all_channels(), type=discord.ChannelType.voice, members=client.user)
+
+    if voice_channel:
+        activity = discord.Activity(type=discord.ActivityType.listening, name="your music")
+        await client.change_presence(activity=activity, channel=voice_channel)
+        
+        # URL web yang ingin ditampilkan
+        web_url = "https://samehadaku.email"
+        
+        # Membuat pesan embed
+        embed = discord.Embed(title="Check out our website!", url=web_url, description="Click the link to visit our website.")
+        embed.set_footer(text="Powered by Your Bot")
+        
+        # Mengirim pesan embed
+        await voice_channel.send(embed=embed)
+    else:
+        print("Bot is not in a voice channel.")
+
+# @client.event
+# async def on_ready():
+#     await client.tree.sync()
 
 
 # STEP 4: HANDLING INCOMING MESSAGES
@@ -45,7 +183,7 @@ async def on_ready() -> None:
 async def on_message(message: Message) -> None:
     if message.author == client.user:
         return
-
+    
     username: str = str(message.author)
     user_message: str = message.content
     channel: str = str(message.channel)
@@ -54,49 +192,9 @@ async def on_message(message: Message) -> None:
 
     await send_message(message, user_message)
 
-
-# STEP 5: MAIN ENTRY POINT
+# STEP 6: MAIN ENTRY POINT
 def main() -> None:
-    client.run(token=TOKEN)
-
-async def handle_marketplace_command(message: Message) -> None:
-    # Daftar barang yang tersedia beserta emoji yang sesuai
-    items = [
-        {'name': 'Item 1', 'price': 10, 'emoji': '⚔️'},  # Emoji untuk Item 1
-        {'name': 'Item 2', 'price': 20, 'emoji': '🛡️'},  # Emoji untuk Item 2
-        {'name': 'Item 3', 'price': 30, 'emoji': '🔮'}   # Emoji untuk Item 3
-    ]
-
-    # Membuat pesan embed untuk menu barang
-    embed = Embed(title='Marketplace', description='Welcome to the marketplace!')
-    for item in items:
-        embed.add_field(name=f"{item['emoji']} {item['name']}", value=f"Price: ${item['price']}", inline=False)
-
-    # Mengirim pesan embed ke saluran pesan pengguna
-    sent_message = await message.channel.send(embed=embed)
-
-    # Menambahkan reaksi ke setiap item di menu
-    for item in items:
-        await sent_message.add_reaction(item['emoji'])
-
-    # Pesan penjelasan untuk pengguna
-    await message.channel.send("React to the item you want to buy.")
-
-    # Menunggu tanggapan dari pengguna dalam bentuk reaksi
-    def check(reaction, user):
-        return user == message.author and str(reaction.emoji) in [item['emoji'] for item in items]
-
-    try:
-        reaction, _ = await client.wait_for('reaction_add', timeout=60.0, check=check)
-        selected_item = next((item for item in items if item['emoji'] == str(reaction.emoji)), None)
-        if selected_item:
-            response = f"You've selected {selected_item['name']} for ${selected_item['price']}."
-            await message.channel.send(response)
-        else:
-            await message.channel.send("Invalid selection.")
-    except asyncio.TimeoutError:
-        await message.channel.send("You didn't select any item within the time limit.")
+    client.run(TOKEN)
 
 if __name__ == '__main__':
     main()
-
