@@ -1,93 +1,91 @@
 from typing import Final
 import os
 from dotenv import load_dotenv
-import asyncio
 import discord
 from discord import Intents, Client, Message, Embed, VoiceChannel, Guild, Member, File
-# from discord_slash import SlashCommand, SlashContext
-# from discord_slash.utils.manage_commands import create_choice, create_option
-from responses import get_response
-
 from discord.ext import commands
 from discord import FFmpegPCMAudio
 import random
 from easy_pil import Editor, load_image_async, Font
+from responses import get_response
 
-# pip install easy_pil
-
-# STEP 0: LOAD OUR TOKEN FROM SOMEWHERE SAFE
+# Memuat token dari file .env
 load_dotenv()
 TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
 
-# STEP 1: BOT SETUP
+# Pengaturan bot
 intents: Intents = Intents.default()
+intents.members = True
 intents.message_content = True
-client: Client = Client(intents=intents)
 client = commands.Bot(command_prefix='/', intents=intents)
 
+# ID saluran sambutan
+WELCOME_CHANNEL_ID: Final[int] = 1227942494684057705
+WELCOME_CHANNEL_ID2: Final[int] = 1236526200306929786
+
+WELCOME_IMAGE: Final[str] = "pic1.jpg"
+
+async def send_welcome_message(channel_id: int, member: Member):
+    channel = member.guild.get_channel(channel_id)
+    if channel is not None:
+        background = Editor(WELCOME_IMAGE)
+        profile_image = await load_image_async(str(member.display_avatar.url))
+
+        profile = Editor(profile_image).resize((150, 150)).circle_image()
+        poppins = Font.poppins(size=50, variant="bold")
+        poppins_small = Font.poppins(size=20, variant="light")
+
+        background.paste(profile, (325, 90))
+        background.ellipse((325, 90), 150, 150, outline="white", stroke_width=5)
+        background.text((400, 260), f"WELCOME to {member.guild.name}", color="white", font=poppins, align="center")
+        background.text((400, 325), f"{member.name}#{member.discriminator}", color="white", font=poppins_small, align="center")
+
+        file = File(fp=background.image_bytes, filename="welcome.jpg")
+        await channel.send(f"Hello {member.mention}! Welcome to **{member.guild.name}**. For more information, go to #get-roles.")
+        await channel.send(file=file)
+    else:
+        print(f"Channel with ID {channel_id} not found.")
 
 @client.event
-async def on_member_join(member):
-    channel = member.guild.system_channel
+async def on_member_join(member: Member):
+    await send_welcome_message(WELCOME_CHANNEL_ID, member)
+    await send_welcome_message(WELCOME_CHANNEL_ID2, member)
 
-    background = Editor("pic1.jpg")
-    profile_image = await load_image_async(str(member.avatar.url))
-
-    profile = Editor(profile_image).resize((150,150)).circle_image()
-    poppins = Font.poppins(size=50, variant="bold")
-
-    poppins_small = Font.poppins(size=20, variant="light")
-
-    background.paste(profile,(325,90))
-    background.ellipse((325,90), 150, 150, outline="white", stroke_width=5)
-
-    background.text((400,260), f"WELCOME TO MY WORLD {member.guild.name}", color="white", font=poppins, align="center")
-    background.text((400,325), f"{member.name}#{member.discriminator}", color="white", font=poppins_small, align="center")
-
-    file = File(fp=background.image_bytes, filename="pic2.jpg")
-    await channel.send(f"Hello {member.mention}! Welcome To **{member.guild.name} For more information go to #get-roles**")
-    await channel.send(file=file)
-
-
-@client.tree.command(name="kwhy",description="Kwhy is gud")
-async def kwhy_command(interaction:discord.Interaction):
+@client.tree.command(name="kwhy", description="Kwhy is good")
+async def kwhy_command(interaction: discord.Interaction):
     await interaction.response.send_message("Hello Minna sama")
 
-#pip install pynacl
-
 @client.tree.command(name="play-music", description="Play music in the voice channel")
-async def play_music_command(ctx: commands.Context):
-    voice_client = ctx.voice_client
+async def play_music_command(interaction: discord.Interaction):
+    voice_client = interaction.guild.voice_client
     if not voice_client or not voice_client.is_connected():
-        return await ctx.send("I'm not connected to a voice channel. Use /join-voice to invite me.")
+        await interaction.response.send_message("I'm not connected to a voice channel. Use /join-voice to invite me.")
+        return
     if voice_client.is_playing():
-        return await ctx.send("I'm already playing music.")
+        await interaction.response.send_message("I'm already playing music.")
+        return
     audio_source = FFmpegPCMAudio('mantap.mp3')
     voice_client.play(audio_source, after=lambda e: print('Player error: %s' % e) if e else None)
-    await ctx.send("Now playing music!")
+    await interaction.response.send_message("Now playing music!")
 
 @client.tree.command(name="leave-voice", description="Leave the voice channel")
-async def leave_voice_command(ctx: commands.Context):
-    voice_client = ctx.voice_client
+async def leave_voice_command(interaction: discord.Interaction):
+    voice_client = interaction.guild.voice_client
     if voice_client and voice_client.is_connected():
         await voice_client.disconnect()
-        await ctx.send("Bot has left the voice channel.")
+        await interaction.response.send_message("Bot has left the voice channel.")
     else:
-        await ctx.send("Bot is not connected to a voice channel.")
+        await interaction.response.send_message("Bot is not connected to a voice channel.")
 
 @client.tree.command(name="join-voice", description="Invite Kwhy to Voice Channel")
 async def join_voice_command(interaction: discord.Interaction):
     member = interaction.user
-    if isinstance(member, discord.Member) and member.guild:
-        if member.voice and member.voice.channel:
-            voice_channel = member.voice.channel
-            await voice_channel.connect()
-            try:
-                await interaction.response.send_message("Bot has been invited to the voice channel.")
-            except discord.errors.NotFound:
-                print("Interaction not found.")
-            return
-    await interaction.response.send_message("You must be connected to a voice channel to invite the bot.")
+    if member.voice and member.voice.channel:
+        voice_channel = member.voice.channel
+        await voice_channel.connect()
+        await interaction.response.send_message("Bot has been invited to the voice channel.")
+    else:
+        await interaction.response.send_message("You must be connected to a voice channel to invite the bot.")
 
 @client.tree.command(name="marketplace", description="Access the marketplace")
 async def marketplace_command(interaction: discord.Interaction):
@@ -97,21 +95,18 @@ async def marketplace_command(interaction: discord.Interaction):
         {'name': 'Item 3', 'price': 30, 'emoji': '🔮'}
     ]
 
-    if interaction.message:
-        embed = Embed(title='Marketplace', description='Welcome to the marketplace!')
-        for item in items:
-            embed.add_field(name=f"{item['emoji']} {item['name']}", value=f"Price: ${item['price']}", inline=False)
+    embed = Embed(title='Marketplace', description='Welcome to the marketplace!')
+    for item in items:
+        embed.add_field(name=f"{item['emoji']} {item['name']}", value=f"Price: ${item['price']}", inline=False)
 
-        await interaction.response.send_message(embed=embed)
+    await interaction.response.send_message(embed=embed)
 
-        for item in items:
-            await interaction.message.add_reaction(item['emoji'])
+    for item in items:
+        await interaction.message.add_reaction(item['emoji'])
 
-        await interaction.followup.send("React to the item you want to buy.")
-    else:
-        print("Message for interaction not found.")
+    await interaction.followup.send("React to the item you want to buy.")
 
-# Fungsi untuk roll dice
+# Fungsi untuk mengocok dadu
 def roll_dice(num_dice: int, num_faces: int) -> str:
     if num_dice != 1 or num_faces != 6:
         return "Invalid dice configuration. Please roll one 6-faced die."
@@ -123,62 +118,32 @@ async def roll_dice_command(interaction: discord.Interaction, num_dice: int = 1,
     result = roll_dice(num_dice, num_faces)
     await interaction.response.send_message(result)
 
-# STEP 2: MESSAGE FUNCTIONALITY
+# Fungsi untuk mengirim pesan berdasarkan input pengguna
 async def send_message(message: Message, user_message: str) -> None:
     if not user_message:
-        print('(Message was empty because intents were not enabled probably)')
+        print('(Pesan kosong karena intents mungkin tidak diaktifkan)')
         return
 
-    if is_private := user_message[0] == '?':
+    is_private = user_message[0] == '?'
+    if is_private:
         user_message = user_message[1:]
 
     try:
         response: str = get_response(user_message)
-        await message.author.send(response) if is_private else await message.channel.send(response)
+        if is_private:
+            await message.author.send(response)
+        else:
+            await message.channel.send(response)
     except Exception as e:
         print(e)
 
-
-# STEP 3: HANDLING THE STARTUP FOR OUR BOT
+# Menangani startup bot
 @client.event
 async def on_ready() -> None:
-    print(f'{client.user} is now running!')
+    print(f'{client.user} sekarang aktif!')
     await client.tree.sync()
 
-    # # Find the voice channel the bot is in
-    # for guild in client.guilds:
-    #     for vc_state in guild.voice_states:
-    #         if vc_state.bot and vc_state.channel:
-    #             voice_channel = vc_state.channel
-    #             break
-    #     else:
-    #         continue
-    #     break
-
-    voice_channel = discord.utils.get(client.get_all_channels(), type=discord.ChannelType.voice, members=client.user)
-
-    if voice_channel:
-        activity = discord.Activity(type=discord.ActivityType.listening, name="your music")
-        await client.change_presence(activity=activity, channel=voice_channel)
-        
-        # URL web yang ingin ditampilkan
-        web_url = "https://samehadaku.email"
-        
-        # Membuat pesan embed
-        embed = discord.Embed(title="Check out our website!", url=web_url, description="Click the link to visit our website.")
-        embed.set_footer(text="Powered by Your Bot")
-        
-        # Mengirim pesan embed
-        await voice_channel.send(embed=embed)
-    else:
-        print("Bot is not in a voice channel.")
-
-# @client.event
-# async def on_ready():
-#     await client.tree.sync()
-
-
-# STEP 4: HANDLING INCOMING MESSAGES
+# Menangani pesan masuk
 @client.event
 async def on_message(message: Message) -> None:
     if message.author == client.user:
@@ -192,7 +157,7 @@ async def on_message(message: Message) -> None:
 
     await send_message(message, user_message)
 
-# STEP 6: MAIN ENTRY POINT
+# Titik masuk utama
 def main() -> None:
     client.run(TOKEN)
 
