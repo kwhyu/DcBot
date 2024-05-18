@@ -25,6 +25,12 @@ intents.members = True
 intents.message_content = True
 client = commands.Bot(command_prefix='/', intents=intents)
 
+playlist = ['Kerusu1.mp3', 'Kerusu.mp3', 'Kerusu3.mp3',
+            'Kerusu4.mp3','Kerusu5.mp3','Kerusu6.mp3',
+            'Kerusu7.mp3','Kerusu8.mp3','Kerusu9.mp3',
+            'Kerusu10.mp3','Kerusu11.mp3','Kerusu12.mp3',
+            'Kerusu13.mp3','Kerusu14.mp3','Kerusu15.mp3']
+
 
 #YT Stuff
 queues = {}
@@ -89,33 +95,27 @@ async def play_music_command(interaction: discord.Interaction):
         await interaction.response.send_message("I'm already playing music.")
         return
 
-    # Define a function to play the audio source and loop it
+    # Define a function to play the audio source and loop through the playlist
     def play_audio_source(error):
         if error:
             print(f'Player error: {error}')
             return
-        
-        audio_source = FFmpegPCMAudio('mantap.mp3')
+
+        # Get the next song in the playlist
+        next_song = playlist.pop(0)
+        playlist.append(next_song)
+
+        audio_source = FFmpegPCMAudio(next_song)
         voice_client.play(audio_source, after=play_audio_source)
 
-    # Start playing the audio source
-    audio_source = FFmpegPCMAudio('mantap.mp3')
+    # Start playing the first song in the playlist
+    first_song = playlist.pop(0)
+    playlist.append(first_song)
+    audio_source = FFmpegPCMAudio(first_song)
     voice_client.play(audio_source, after=play_audio_source)
 
     await interaction.response.send_message("Now playing music on loop!")
 
-# @client.tree.command(name="play-music", description="Play music in the voice channel")
-# async def play_music_command(interaction: discord.Interaction):
-#     voice_client = interaction.guild.voice_client
-#     if not voice_client or not voice_client.is_connected():
-#         await interaction.response.send_message("I'm not connected to a voice channel. Use /join-voice to invite me.")
-#         return
-#     if voice_client.is_playing():
-#         await interaction.response.send_message("I'm already playing music.")
-#         return
-#     audio_source = FFmpegPCMAudio('mantap.mp3')
-#     voice_client.play(audio_source, after=lambda e: print('Player error: %s' % e) if e else None)
-#     await interaction.response.send_message("Now playing music!")
 
 @client.tree.command(name="leave-voice", description="Leave the voice channel")
 async def leave_voice_command(interaction: discord.Interaction):
