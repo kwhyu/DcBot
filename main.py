@@ -9,11 +9,10 @@ import random
 from easy_pil import Editor, load_image_async, Font
 from responses import get_response
 
-
-import asyncio
-import yt_dlp
-#pip install --user yt-dlp
-import urllib.parse, urllib.request, re
+# import asyncio
+# import yt_dlp
+# #pip install --user yt-dlp
+# import urllib.parse, urllib.request, re
 
 # Memuat token dari file .env
 load_dotenv()
@@ -31,15 +30,14 @@ playlist = ['Kerusu1.mp3', 'Kerusu.mp3', 'Kerusu3.mp3',
             'Kerusu10.mp3','Kerusu11.mp3','Kerusu12.mp3',
             'Kerusu13.mp3','Kerusu14.mp3','Kerusu15.mp3']
 
-
-#YT Stuff
-queues = {}
-voice_clients = {}
-youtube_base_url = 'https://www.youtube.com/'
-youtube_results_url = youtube_base_url + 'results?'
-youtube_watch_url = youtube_base_url + 'watch?v='
-yt_dl_options = {"format": "bestaudio/best"}
-ytdl = yt_dlp.YoutubeDL(yt_dl_options)
+# #YT Stuff
+# queues = {}
+# voice_clients = {}
+# youtube_base_url = 'https://www.youtube.com/'
+# youtube_results_url = youtube_base_url + 'results?'
+# youtube_watch_url = youtube_base_url + 'watch?v='
+# yt_dl_options = {"format": "bestaudio/best"}
+# ytdl = yt_dlp.YoutubeDL(yt_dl_options)
 
 # ffmpeg_options = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5','options': '-vn -filter:a "volume=0.25"'}
 
