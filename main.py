@@ -9,6 +9,12 @@ import random
 from easy_pil import Editor, load_image_async, Font
 from responses import get_response
 
+
+import asyncio
+import yt_dlp
+#pip install --user yt-dlp
+import urllib.parse, urllib.request, re
+
 # Memuat token dari file .env
 load_dotenv()
 TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
@@ -18,6 +24,24 @@ intents: Intents = Intents.default()
 intents.members = True
 intents.message_content = True
 client = commands.Bot(command_prefix='/', intents=intents)
+
+
+#YT Stuff
+queues = {}
+voice_clients = {}
+youtube_base_url = 'https://www.youtube.com/'
+youtube_results_url = youtube_base_url + 'results?'
+youtube_watch_url = youtube_base_url + 'watch?v='
+yt_dl_options = {"format": "bestaudio/best"}
+ytdl = yt_dlp.YoutubeDL(yt_dl_options)
+
+# ffmpeg_options = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5','options': '-vn -filter:a "volume=0.25"'}
+
+ffmpeg_options = {
+    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+    'options': '-vn -filter:a "volume=0.25"',
+    'executable': 'C:\FFmpeg\bin'  # Specify the full path to the FFmpeg executable
+}
 
 # ID saluran sambutan
 WELCOME_CHANNEL_ID: Final[int] = 1227942494684057705
@@ -157,8 +181,99 @@ async def on_message(message: Message) -> None:
 
     await send_message(message, user_message)
 
-# Titik masuk utama
+@client.event
+async def on_ready():
+    print(f'{client.user} is now jamming')
+
+
+# class MusicCog(commands.Cog, name="Music"):
+#     def __init__(self, bot):
+#         self.bot = bot
+
+#     async def play_next(self, ctx):
+#         if queues[ctx.guild.id] != []:
+#             link = queues[ctx.guild.id].pop(0)
+#             await self.play(ctx, link=link)
+    
+#     @commands.tree.command(name="play", description="Play a song from YouTube")
+#     async def play(self, ctx, *, link):
+#         try:
+#             voice_client = ctx.guild.voice_client
+#             if not voice_client:
+#                 voice_channel = ctx.author.voice.channel
+#                 voice_client = await voice_channel.connect()
+#                 voice_clients[voice_client.guild.id] = voice_client
+
+#             if not voice_client.is_playing():
+#                 if youtube_base_url not in link:
+#                     query_string = urllib.parse.urlencode({
+#                         'search_query': link
+#                     })
+
+#                     content = urllib.request.urlopen(
+#                         youtube_results_url + query_string
+#                     )
+
+#                     search_results = re.findall(r'/watch\?v=(.{11})', content.read().decode())
+
+#                     link = youtube_watch_url + search_results[0]
+
+#                 loop = asyncio.get_event_loop()
+#                 data = await loop.run_in_executor(None, lambda: ytdl.extract_info(link, download=False))
+
+#                 song = data['url']
+#                 player = discord.FFmpegOpusAudio(song, **ffmpeg_options)
+
+#                 voice_client.play(player, after=lambda e: asyncio.ensure_future(self.play_next(ctx)))
+#         except Exception as e:
+#             print(e)
+
+#     @commands.tree.command(name="clear_queue", description="Clear the music queue")
+#     async def clear_queue(self, ctx):
+#         if ctx.guild.id in queues:
+#             queues[ctx.guild.id].clear()
+#             await ctx.send("Queue cleared!")
+#         else:
+#             await ctx.send("There is no queue to clear")
+
+#     @commands.tree.command(name="pause", description="Pause the currently playing song")
+#     async def pause(self, ctx):
+#         try:
+#             voice_client = ctx.guild.voice_client
+#             if voice_client and voice_client.is_playing():
+#                 voice_client.pause()
+#         except Exception as e:
+#             print(e)
+
+#     @commands.tree.command(name="resume", description="Resume the paused song")
+#     async def resume(self, ctx):
+#         try:
+#             voice_client = ctx.guild.voice_client
+#             if voice_client and voice_client.is_paused():
+#                 voice_client.resume()
+#         except Exception as e:
+#             print(e)
+
+#     @commands.tree.command(name="stop", description="Stop playing and disconnect from the voice channel")
+#     async def stop(self, ctx):
+#         try:
+#             voice_client = ctx.guild.voice_client
+#             if voice_client:
+#                 voice_client.stop()
+#                 await voice_client.disconnect()
+#                 del voice_clients[ctx.guild.id]
+#         except Exception as e:
+#             print(e)
+
+#     @commands.tree.command(name="queue", description="Add a song to the music queue")
+#     async def queue(self, ctx, *, url):
+#         if ctx.guild.id not in queues:
+#             queues[ctx.guild.id] = []
+#         queues[ctx.guild.id].append(url)
+#         await ctx.send("Added to queue!")
+
 def main() -> None:
+    # client.add_cog(MusicCog(client))
     client.run(TOKEN)
 
 if __name__ == '__main__':
