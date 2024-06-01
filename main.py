@@ -9,11 +9,6 @@ import random
 from easy_pil import Editor, load_image_async, Font
 from responses import get_response
 
-# import asyncio
-# import yt_dlp
-# #pip install --user yt-dlp
-# import urllib.parse, urllib.request, re
-
 # Memuat token dari file .env
 load_dotenv()
 TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
@@ -24,27 +19,18 @@ intents.members = True
 intents.message_content = True
 client = commands.Bot(command_prefix='/', intents=intents)
 
-playlist = ['Kerusu1.mp3', 'Kerusu.mp3', 'Kerusu3.mp3',
-            'Kerusu4.mp3','Kerusu5.mp3','Kerusu6.mp3',
-            'Kerusu7.mp3','Kerusu8.mp3','Kerusu9.mp3',
-            'Kerusu10.mp3','Kerusu11.mp3','Kerusu12.mp3',
-            'Kerusu13.mp3','Kerusu14.mp3','Kerusu15.mp3']
+playlist = ['Kerusu/Kerusu1.mp3', 'Kerusu/Kerusu2.mp3', 'Kerusu/Kerusu3.mp3',
+            'Kerusu/Kerusu4.mp3', 'Kerusu/Kerusu5.mp3', 'Kerusu/Kerusu6.mp3',
+            'Kerusu/Kerusu7.mp3', 'Kerusu/Kerusu8.mp3', 'Kerusu/Kerusu9.mp3',
+            'Kerusu/Kerusu10.mp3', 'Kerusu/Kerusu11.mp3', 'Kerusu/Kerusu12.mp3',
+            'Kerusu/Kerusu13.mp3', 'Kerusu/Kerusu14.mp3', 'Kerusu/Kerusu15.mp3']
+afrojack =['Kerusu/Kerusu1.mp3']
 
-# #YT Stuff
-# queues = {}
-# voice_clients = {}
-# youtube_base_url = 'https://www.youtube.com/'
-# youtube_results_url = youtube_base_url + 'results?'
-# youtube_watch_url = youtube_base_url + 'watch?v='
-# yt_dl_options = {"format": "bestaudio/best"}
-# ytdl = yt_dlp.YoutubeDL(yt_dl_options)
-
-# ffmpeg_options = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5','options': '-vn -filter:a "volume=0.25"'}
 
 ffmpeg_options = {
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
     'options': '-vn -filter:a "volume=0.25"',
-    'executable': 'C:\FFmpeg\bin'  # Specify the full path to the FFmpeg executable
+    'executable': 'C:\FFmpeg\bin' 
 }
 
 # ID saluran sambutan
@@ -78,6 +64,11 @@ async def send_welcome_message(channel_id: int, member: Member):
 async def on_member_join(member: Member):
     await send_welcome_message(WELCOME_CHANNEL_ID, member)
     await send_welcome_message(WELCOME_CHANNEL_ID2, member)
+
+@client.tree.command(name="ping", description="Cek latensi bot")
+async def ping_command(interaction: discord.Interaction):
+    latency = round(client.latency * 1000)
+    await interaction.response.send_message(f"Pong! Latensi: {latency} ms")
 
 @client.tree.command(name="kwhy", description="Kwhy is good")
 async def kwhy_command(interaction: discord.Interaction):
