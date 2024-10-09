@@ -9,6 +9,7 @@ import random
 from easy_pil import Editor, load_image_async, Font
 from responses import get_response
 import openai
+import random
 
 # Memuat token dari file .env
 #load_dotenv()
@@ -178,7 +179,22 @@ async def get_chatgpt_response(prompt: str) -> str:
 async def chatgpt_command(interaction: discord.Interaction, prompt: str):
     await interaction.response.defer() 
     response = await get_chatgpt_response(prompt) 
-    await interaction.followup.send(response) 
+    await interaction.followup.send(response)
+
+@client.tree.command(name="random", description="Get random from your list")
+async def random_command(interaction: discord.Interaction, names: str):
+    # Memisahkan nama-nama yang dipisahkan dengan spasi
+    name_list = names.split()
+    
+    if not name_list:
+        await interaction.response.send_message("Please provide at least one name.")
+        return
+
+    # Memilih nama secara acak dari daftar
+    random_name = random.choice(name_list)
+
+    # Mengirimkan hasil ke channel
+    await interaction.response.send_message(f"Randomly selected name: {random_name}")
             
 # Fungsi untuk mengirim pesan berdasarkan input pengguna
 async def send_message(message: Message, user_message: str) -> None:
