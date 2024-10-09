@@ -15,6 +15,23 @@ import random
 #load_dotenv()
 #TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
 
+# Game Items
+ITEMS = {
+    "🌱": "Seed",           # Level 1
+    "🌾": "Plant",          # Level 2
+    "🍎": "Fruit",          # Level 3
+    "🧺": "Basket",         # Level 4
+    "🥖": "Bread"           # Level 5
+}
+
+# Define merging rules
+MERGE_RULES = {
+    "🌱🌱": "🌾",  # Two Seeds make a Plant
+    "🌾🌾": "🍎",  # Two Plants make a Fruit
+    "🍎🍎": "🧺",  # Two Fruits make a Basket
+    "🧺🧺": "🥖"   # Two Baskets make Bread
+}
+
 TOKEN = os.getenv('DISCORD_TOKEN')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
@@ -23,6 +40,33 @@ intents: Intents = Intents.default()
 intents.members = True
 intents.message_content = True
 client = commands.Bot(command_prefix='/', intents=intents)
+
+class Player:
+    def __init__(self, member):
+        self.member = member
+        self.inventory = {
+            "🌱": 2,  # Start with two seeds
+            "🌾": 0,
+            "🍎": 0,
+            "🧺": 0,
+            "🥖": 0
+        }
+
+    def get_inventory(self):
+        return "\n".join([f"{emoji}: {count}" for emoji, count in self.inventory.items() if count > 0])
+
+    def merge_items(self, item1, item2):
+        key = f"{item1}{item2}"
+        if key in MERGE_RULES:
+            new_item = MERGE_RULES[key]
+            self.inventory[item1] -= 1
+            self.inventory[item2] -= 1
+            self.inventory[new_item] += 1
+            return new_item
+        return None
+
+# Store players in an active game
+active_games = {}
 
 openai.api_key = OPENAI_API_KEY
 
@@ -180,6 +224,48 @@ async def chatgpt_command(interaction: discord.Interaction, prompt: str):
     await interaction.response.defer() 
     response = await get_chatgpt_response(prompt) 
     await interaction.followup.send(response)
+
+@client.tree.command(name="start-merge-game", description="Start a merge game")
+async def start_merge_game(interaction):
+    member = interaction.user
+    if member.id not in active_games:
+        active_games[member.id] = Player(member)
+        await interaction.response.send_message(f"{member.mention}, the merge game has started! Use /inventory to check your items.")
+    else:
+        await interaction.response.send_message("You are already in a game!")
+
+@client.tree.command(name="inventory", description="Check your inventory")
+async def inventory_command(interaction):
+    member = interaction.user
+    if member.id in active_games:
+        player = active_games[member.id]
+        inventory = player.get_inventory()
+        await interaction.response.send_message(f"Your inventory:\n{inventory}")
+    else:
+        await interaction.response.send_message("You are not in a merge game. Start one with /start-merge-game.")
+
+@client.tree.command(name="merge", description="Merge two items")
+async def merge_command(interaction, item1: str, item2: str):
+    member = interaction.user
+    if member.id in active_games:
+        player = active_games[member.id]
+        new_item = player.merge_items(item1, item2)
+        if new_item:
+            await interaction.response.send_message(f"You merged {item1} and {item2} to create {new_item}!")
+        else:
+            await interaction.response.send_message("Merge failed! Check your items or the merge rules.")
+    else:
+        await interaction.response.send_message("You are not in a merge game. Start one with /start-merge-game.")
+
+@client.tree.command(name="end-merge-game", description="End the merge game")
+async def end_merge_game(interaction):
+    member = interaction.user
+    if member.id in active_games:
+        del active_games[member.id]
+        await interaction.response.send_message(f"{member.mention}, your merge game has ended.")
+    else:
+        await interaction.response.send_message("You are not in a merge game.")
+
 
 @client.tree.command(name="random", description="Get random from your list")
 async def random_command(interaction: discord.Interaction, names: str):
