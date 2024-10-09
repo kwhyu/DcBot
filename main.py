@@ -338,6 +338,17 @@ async def on_message(message: Message) -> None:
 async def on_ready():
     print(f'{client.user} is now jamming')
     await client.tree.sync()
+    
+    # Mengatur aktivitas
+    activity = discord.Activity(type=discord.ActivityType.playing, name="Game Seru", url="https://www.youtube.com")
+    await client.change_presence(activity=activity)
+    print("Status bot telah diperbarui!")
+
+@client.command()
+async def set_activity(ctx, *, activity_name: str):
+    activity = discord.Activity(type=discord.ActivityType.playing, name=activity_name, url="https://www.youtube.com")
+    await client.change_presence(activity=activity)
+    await ctx.send(f"Status bot diubah menjadi: {activity_name}")
 
 def main() -> None:
     # client.add_cog(MusicCog(client))
