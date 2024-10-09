@@ -3,5 +3,4 @@ python-dotenv
 easy-pil
 ffmpeg
 PyNaCl
-openai
-openai migrate
+openai==0.28
