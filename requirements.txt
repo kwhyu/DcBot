@@ -3,4 +3,4 @@ python-dotenv
 easy-pil
 ffmpeg
 PyNaCl
-openai==0.28
+openai==0.28.0
