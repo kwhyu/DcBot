@@ -164,13 +164,13 @@ async def roll_dice_command(interaction: discord.Interaction, num_dice: int = 1,
 
 async def get_chatgpt_response(prompt: str) -> str:
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=100,
-            temperature=0.7,
+        response = openai.Completion.create(
+            model="text-davinci-003", 
+            prompt=prompt,
+            max_tokens=100,  
+            temperature=0.7, 
         )
-        return response.choices[0].message['content'].strip()
+        return response.choices[0].text.strip()
     except Exception as e:
         return f"Error while fetching response: {str(e)}"
 
