@@ -2,7 +2,7 @@ from typing import Final
 import os
 from dotenv import load_dotenv
 import discord
-from discord import Intents, Client, Message, Embed, VoiceChannel, Guild, Member, File
+from discord import Intents, Client, Message, Embed, VoiceChannel, Guild, Member, File, Activity, ActivityType
 from discord.ext import commands
 from discord import FFmpegPCMAudio
 import random
@@ -281,6 +281,19 @@ async def random_command(interaction: discord.Interaction, names: str):
 
     # Mengirimkan hasil ke channel
     await interaction.response.send_message(f"Randomly selected name: {random_name}")
+
+@client.tree.command(name="start_activity", description="Mulai aktivitas")
+async def start_activity_command(interaction: discord.Interaction):
+    activity_name = "Bermain Game"
+    activity_url = "https://www.pogo.com"  # Ganti dengan URL yang sesuai
+
+    # Mendaftarkan aktivitas
+    activity = Activity(type=ActivityType.playing, name=activity_name, url=activity_url)
+
+    # Mengubah status bot
+    await client.change_presence(activity=activity)
+
+    await interaction.response.send_message(f"Aktivitas '{activity_name}' dimulai! Bergabunglah di {activity_url}")
             
 # Fungsi untuk mengirim pesan berdasarkan input pengguna
 async def send_message(message: Message, user_message: str) -> None:
