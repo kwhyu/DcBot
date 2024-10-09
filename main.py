@@ -164,20 +164,20 @@ async def roll_dice_command(interaction: discord.Interaction, num_dice: int = 1,
 
 async def get_chatgpt_response(prompt: str) -> str:
     try:
-        response = openai.Completion.create(
-            model="text-davinci-003",  
-            prompt=prompt,
-            max_tokens=100,  
-            temperature=0.7,  
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=100,
+            temperature=0.7,
         )
-        return response.choices[0].text.strip()
+        return response.choices[0].message['content'].strip()
     except Exception as e:
         return f"Error while fetching response: {str(e)}"
 
 @client.tree.command(name="chatgpt", description="Send a prompt to ChatGPT")
 async def chatgpt_command(interaction: discord.Interaction, prompt: str):
-    await interaction.response.defer()  
-    response = await get_chatgpt_response(prompt)  
+    await interaction.response.defer() 
+    response = await get_chatgpt_response(prompt) 
     await interaction.followup.send(response) 
             
 # Fungsi untuk mengirim pesan berdasarkan input pengguna
