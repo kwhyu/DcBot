@@ -8,18 +8,22 @@ from discord import FFmpegPCMAudio
 import random
 from easy_pil import Editor, load_image_async, Font
 from responses import get_response
+import openai
 
 # Memuat token dari file .env
 #load_dotenv()
 #TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
 
 TOKEN = os.getenv('DISCORD_TOKEN')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
 # Pengaturan bot
 intents: Intents = Intents.default()
 intents.members = True
 intents.message_content = True
 client = commands.Bot(command_prefix='/', intents=intents)
+
+openai.api_key = OPENAI_API_KEY
 
 playlist = ['Kerusu/Kerusu1.mp3', 'Kerusu/Kerusu2.mp3', 'Kerusu/Kerusu3.mp3',
             'Kerusu/Kerusu4.mp3', 'Kerusu/Kerusu5.mp3', 'Kerusu/Kerusu6.mp3',
@@ -158,6 +162,24 @@ async def roll_dice_command(interaction: discord.Interaction, num_dice: int = 1,
     result = roll_dice(num_dice, num_faces)
     await interaction.response.send_message(result)
 
+async def get_chatgpt_response(prompt: str) -> str:
+    try:
+        response = openai.Completion.create(
+            model="text-davinci-003",  
+            prompt=prompt,
+            max_tokens=100,  
+            temperature=0.7,  
+        )
+        return response.choices[0].text.strip()
+    except Exception as e:
+        return f"Error while fetching response: {str(e)}"
+
+@client.tree.command(name="chatgpt", description="Send a prompt to ChatGPT")
+async def chatgpt_command(interaction: discord.Interaction, prompt: str):
+    await interaction.response.defer()  
+    response = await get_chatgpt_response(prompt)  
+    await interaction.followup.send(response) 
+            
 # Fungsi untuk mengirim pesan berdasarkan input pengguna
 async def send_message(message: Message, user_message: str) -> None:
     if not user_message:
