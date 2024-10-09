@@ -10,8 +10,10 @@ from easy_pil import Editor, load_image_async, Font
 from responses import get_response
 
 # Memuat token dari file .env
-load_dotenv()
-TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
+#load_dotenv()
+#TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
+
+TOKEN = os.getenv('DISCORD_TOKEN')
 
 # Pengaturan bot
 intents: Intents = Intents.default()
