@@ -222,6 +222,7 @@ async def on_message(message: Message) -> None:
 @client.event
 async def on_ready():
     print(f'{client.user} is now jamming')
+    await client.tree.sync()
 
 def main() -> None:
     # client.add_cog(MusicCog(client))
