@@ -165,7 +165,7 @@ async def roll_dice_command(interaction: discord.Interaction, num_dice: int = 1,
 async def get_chatgpt_response(prompt: str) -> str:
     try:
         response = openai.Completion.create(
-            model="gpt-3", 
+            model="text-curie-001", 
             prompt=prompt,
             max_tokens=100,  
             temperature=0.7, 
