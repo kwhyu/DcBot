@@ -301,14 +301,15 @@ async def echo_command(interaction: discord.Interaction, message: str):
     Command untuk chat anonim, bot akan mengirim pesan yang dimasukkan pengguna tanpa menampilkan siapa yang memicu command.
     """
     try:
-        # Menunda tanggapan ke pengguna untuk menyembunyikan siapa yang menggunakan command
+        # Menunda tanggapan ke pengguna agar tidak ada jejak command yang dijalankan
         await interaction.response.defer(ephemeral=True)
 
         # Bot mengirim pesan ke channel secara anonim
-        await interaction.followup.send(message)
+        channel = interaction.channel
+        await channel.send(message)  # Bot mengirim pesan ke channel atas namanya sendiri
     except Exception as e:
-        # Menangani error jika ada kesalahan
-        await interaction.followup.send(f"Terjadi kesalahan: {e}")
+        # Jika terjadi kesalahan, berikan pesan error hanya ke pengguna yang menjalankan command
+        await interaction.followup.send(f"Terjadi kesalahan: {e}", ephemeral=True)
 
             
 # Fungsi untuk mengirim pesan berdasarkan input pengguna
