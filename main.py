@@ -282,18 +282,21 @@ async def random_command(interaction: discord.Interaction, names: str):
     # Mengirimkan hasil ke channel
     await interaction.response.send_message(f"Randomly selected name: {random_name}")
 
-@client.tree.command(name="start_activity", description="Mulai aktivitas")
-async def start_activity_command(interaction: discord.Interaction):
-    activity_name = "Bermain Game"
-    activity_url = "https://www.pogo.com"  # Ganti dengan URL yang sesuai
+@client.tree.command(name="launch-activity", description="Launch the custom game or activity")
+async def launch_activity(interaction: discord.Interaction):
+    voice_channel = interaction.user.voice.channel
+    if voice_channel is None:
+        await interaction.response.send_message("You need to be in a voice channel to start an activity.", ephemeral=True)
+        return
 
-    # Mendaftarkan aktivitas
-    activity = Activity(type=ActivityType.playing, name=activity_name, url=activity_url)
+    # Activity ID can be your custom activity or an existing Discord activity (ex: YouTube Together, Chess, etc.)
+    activity_id = 755827207812677713  # Example for YouTube Together
+    try:
+        invite = await voice_channel.create_activity_invite(activity_id)
+        await interaction.response.send_message(f"Click here to join the activity: {invite.url}")
+    except Exception as e:
+        await interaction.response.send_message(f"Failed to launch activity: {e}", ephemeral=True)
 
-    # Mengubah status bot
-    await client.change_presence(activity=activity)
-
-    await interaction.response.send_message(f"Aktivitas '{activity_name}' dimulai! Bergabunglah di {activity_url}")
 
 @client.tree.command(name="echo", description="Chat anonim melalui bot")
 async def echo_command(interaction: discord.Interaction, message: str):
