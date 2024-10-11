@@ -522,13 +522,28 @@ class SnakeControlView(View):
         await self.update_game(interaction)
 
     async def update_game(self, interaction):
+        # Update pergerakan ular tanpa menunggu masukan dari pengguna
         self.game.move_snake()
         if self.game.game_over:
             await interaction.response.edit_message(content=f"Game Over! Skor akhir: {self.game.score}", view=None)
-            await self.game.ctx.send(f"{self.game.ctx.user.mention} mendapatkan skor {self.game.score}!")
+            await self.game.ctx.channel.send(f"{self.game.ctx.user.mention} mendapatkan skor {self.game.score}!")
         else:
             embed = discord.Embed(title="Snake Game", description=f"Skor: {self.game.score}\n{self.game.render_board()}")
             await interaction.response.edit_message(embed=embed)
+
+# Loop permainan otomatis
+async def game_loop(game, interaction):
+    while not game.game_over:
+        game.move_snake()
+        if game.game_over:
+            # Kirim hasil akhir yang dapat dilihat semua orang
+            await interaction.edit_original_response(content=f"Game Over! Skor akhir: {game.score}", view=None)
+            await game.ctx.channel.send(f"{game.ctx.user.mention} mendapatkan skor {game.score}!")
+        else:
+            # Update board untuk pemain, tapi tetap ephemeral selama permainan belum selesai
+            embed = discord.Embed(title="Snake Game", description=f"Skor: {game.score}\n{game.render_board()}")
+            await interaction.edit_original_response(embed=embed)
+        await asyncio.sleep(0.5)
 
 # Slash Command untuk memulai game
 @client.tree.command(name="snake-game", description="play snake game")
@@ -538,7 +553,12 @@ async def start_game(interaction: discord.Interaction):
 
     # Menambahkan kontrol dengan tombol di bawah kanvas
     view = SnakeControlView(game)
-    await interaction.response.send_message(embed=embed, view=view)
+    
+    # Kirim pesan pertama dengan ephemeral=True, hanya terlihat oleh pemain
+    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+    
+    # Mulai loop permainan otomatis
+    await game_loop(game, interaction)
 
 
 # MAIN
