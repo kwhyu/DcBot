@@ -42,6 +42,7 @@ MERGE_RULES = {
 
 TOKEN = os.getenv('DISCORD_TOKEN')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+CUSTOM_ACTIVITY_ID = os.getenv('CUSTOM_ACTIVITY_ID')
 
 # Pengaturan bot
 intents: Intents = Intents.default()
@@ -290,28 +291,21 @@ async def random_command(interaction: discord.Interaction, names: str):
     # Mengirimkan hasil ke channel
     await interaction.response.send_message(f"Randomly selected name: {random_name}")
 
-@client.tree.command(name="launch-activity", description="Launch a custom Discord activity in the voice channel")
-async def launch_activity(interaction: discord.Interaction, activity_name: str):
+@client.tree.command(name="launch-custom-activity", description="Launch your custom activity in the voice channel")
+async def launch_custom_activity(interaction: discord.Interaction):
     # Periksa apakah user berada di voice channel
     if not interaction.user.voice or not interaction.user.voice.channel:
         await interaction.response.send_message("You need to be in a voice channel to launch an activity.", ephemeral=True)
-        return
-
-    # Cek apakah aktivitas yang diminta ada di daftar
-    activity_id = ACTIVITIES.get(activity_name.lower())
-    if not activity_id:
-        await interaction.response.send_message(f"Activity '{activity_name}' not found. Available activities are: {', '.join(ACTIVITIES.keys())}.", ephemeral=True)
         return
 
     voice_channel = interaction.user.voice.channel
 
     try:
         # Membuat invite untuk aktivitas di voice channel
-        invite = await voice_channel.create_activity_invite(activity_id)
-        await interaction.response.send_message(f"Click here to join the {activity_name}: {invite.url}")
+        invite = await voice_channel.create_activity_invite(CUSTOM_ACTIVITY_ID)
+        await interaction.response.send_message(f"Click here to join the custom activity: {invite.url}")
     except Exception as e:
-        await interaction.response.send_message(f"Failed to launch activity: {e}", ephemeral=True)
-
+        await interaction.response.send_message(f"Failed to launch the custom activity: {e}", ephemeral=True)
 
 @client.tree.command(name="echo", description="Chat anonim melalui bot")
 async def echo_command(interaction: discord.Interaction, message: str):
