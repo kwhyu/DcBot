@@ -531,7 +531,7 @@ class SnakeControlView(View):
             await interaction.response.edit_message(embed=embed)
 
 # Slash Command untuk memulai game
-@tree.command(name="snake-game", description="play snake game")
+@client.tree.command(name="snake-game", description="play snake game")
 async def start_game(interaction: discord.Interaction):
     game = SnakeGame(interaction)
     embed = discord.Embed(title="Snake Game", description=f"Skor: {game.score}\n{game.render_board()}")
