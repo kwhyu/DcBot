@@ -294,7 +294,7 @@ async def launch_custom_activity(interaction: discord.Interaction):
 
     try:
         # Membuat invite untuk aktivitas di voice channel
-        invite = await voice_channel.create_activity_invite(CUSTOM_ACTIVITY_ID)
+        invite = await voice_channel.create_activity_invite(int(CUSTOM_ACTIVITY_ID))  # Pastikan ID diubah ke integer
         await interaction.response.send_message(f"Click here to join the custom activity: {invite.url}")
     except Exception as e:
         await interaction.response.send_message(f"Failed to launch the custom activity: {e}", ephemeral=True)
