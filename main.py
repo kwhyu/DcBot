@@ -15,14 +15,6 @@ import random
 #load_dotenv()
 #TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
 
-ACTIVITIES = {
-    "youtube_together": 755600276941176913,  # YouTube Together
-    "chess": 832012774040141894,             # Chess In The Park
-    "poker_night": 755827207812677713,       # Poker Night
-    "betrayal": 773336526917861400,          # Betrayal.io
-    "fishington": 814288819477020702         # Fishington.io
-}
-
 # Game Items
 ITEMS = {
     "🌱": "Seed",           # Level 1
