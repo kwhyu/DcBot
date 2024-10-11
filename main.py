@@ -361,13 +361,13 @@ async def on_ready():
     await client.tree.sync()
     
     # Mengatur aktivitas
-    activity = discord.Activity(type=discord.ActivityType.playing, name="Game Seru", url="https://www.youtube.com")
+    activity = discord.Activity(type=discord.ActivityType.playing, name="/help", url="https://dcsnekgim.netlify.app")
     await client.change_presence(activity=activity)
     print("Status bot telah diperbarui!")
 
 @client.command()
 async def set_activity(ctx, *, activity_name: str):
-    activity = discord.Activity(type=discord.ActivityType.playing, name=activity_name, url="https://www.youtube.com")
+    activity = discord.Activity(type=discord.ActivityType.playing, name=activity_name, url="https://dcsnekgim.netlify.app")
     await client.change_presence(activity=activity)
     await ctx.send(f"Status bot diubah menjadi: {activity_name}")
 
