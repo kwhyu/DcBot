@@ -117,6 +117,35 @@ async def on_member_join(member: Member):
     await send_welcome_message(WELCOME_CHANNEL_ID, member)
     await send_welcome_message(WELCOME_CHANNEL_ID2, member)
 
+@client.tree.command(name="help", description="List of available commands and their descriptions")
+async def help_command(interaction: discord.Interaction):
+    embed = discord.Embed(title="Bot Commands", description="Here is a list of commands you can use:", color=discord.Color.blue())
+    
+    embed.add_field(name="/ping", value="Check bot's latency.", inline=False)
+    embed.add_field(name="/kwhy", value="Just a fun greeting command.", inline=False)
+    embed.add_field(name="/play-music", value="Play music in the voice channel.", inline=False)
+    embed.add_field(name="/leave-voice", value="Bot leaves the voice channel.", inline=False)
+    embed.add_field(name="/join-voice", value="Invite bot to your current voice channel.", inline=False)
+    embed.add_field(name="/marketplace", value="Access the marketplace.", inline=False)
+    embed.add_field(name="/roll-dice", value="Roll a six-sided die.", inline=False)
+    embed.add_field(name="/chatgpt", value="Send a prompt to ChatGPT.", inline=False)
+    embed.add_field(name="/start-merge-game", value="Start a merge game.", inline=False)
+    embed.add_field(name="/inventory", value="Check your inventory in the merge game.", inline=False)
+    embed.add_field(name="/merge", value="Merge two items in the merge game.", inline=False)
+    embed.add_field(name="/end-merge-game", value="End the merge game.", inline=False)
+    embed.add_field(name="/launch-custom-activity", value="Launch a custom activity in a voice channel.", inline=False)
+    embed.add_field(name="/echo", value="Send an anonymous message.", inline=False)
+    embed.add_field(name="/random", value="Get a random selection from a list.", inline=False)
+    embed.add_field(name="/settings", value="Open the dashboard to configure the bot.", inline=False)
+
+    await interaction.response.send_message(embed=embed)
+
+@client.tree.command(name="settings", description="Open the bot's settings dashboard")
+async def settings_command(interaction: discord.Interaction):
+    dashboard_url = "https://yourdashboardlink.com"  # Ganti dengan link dashboard Anda
+    await interaction.response.send_message(f"You can configure the bot's settings here: [Dashboard]({dashboard_url})")
+
+
 @client.tree.command(name="ping", description="Cek latensi bot")
 async def ping_command(interaction: discord.Interaction):
     latency = round(client.latency * 1000)
