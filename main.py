@@ -15,6 +15,14 @@ import random
 #load_dotenv()
 #TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
 
+ACTIVITIES = {
+    "youtube_together": 755600276941176913,  # YouTube Together
+    "chess": 832012774040141894,             # Chess In The Park
+    "poker_night": 755827207812677713,       # Poker Night
+    "betrayal": 773336526917861400,          # Betrayal.io
+    "fishington": 814288819477020702         # Fishington.io
+}
+
 # Game Items
 ITEMS = {
     "🌱": "Seed",           # Level 1
@@ -282,18 +290,25 @@ async def random_command(interaction: discord.Interaction, names: str):
     # Mengirimkan hasil ke channel
     await interaction.response.send_message(f"Randomly selected name: {random_name}")
 
-@client.tree.command(name="launch-activity", description="Launch the custom game or activity")
-async def launch_activity(interaction: discord.Interaction):
-    voice_channel = interaction.user.voice.channel
-    if voice_channel is None:
-        await interaction.response.send_message("You need to be in a voice channel to start an activity.", ephemeral=True)
+@client.tree.command(name="launch-activity", description="Launch a custom Discord activity in the voice channel")
+async def launch_activity(interaction: discord.Interaction, activity_name: str):
+    # Periksa apakah user berada di voice channel
+    if not interaction.user.voice or not interaction.user.voice.channel:
+        await interaction.response.send_message("You need to be in a voice channel to launch an activity.", ephemeral=True)
         return
 
-    # Activity ID can be your custom activity or an existing Discord activity (ex: YouTube Together, Chess, etc.)
-    activity_id = 755827207812677713  # Example for YouTube Together
+    # Cek apakah aktivitas yang diminta ada di daftar
+    activity_id = ACTIVITIES.get(activity_name.lower())
+    if not activity_id:
+        await interaction.response.send_message(f"Activity '{activity_name}' not found. Available activities are: {', '.join(ACTIVITIES.keys())}.", ephemeral=True)
+        return
+
+    voice_channel = interaction.user.voice.channel
+
     try:
+        # Membuat invite untuk aktivitas di voice channel
         invite = await voice_channel.create_activity_invite(activity_id)
-        await interaction.response.send_message(f"Click here to join the activity: {invite.url}")
+        await interaction.response.send_message(f"Click here to join the {activity_name}: {invite.url}")
     except Exception as e:
         await interaction.response.send_message(f"Failed to launch activity: {e}", ephemeral=True)
 
