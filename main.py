@@ -297,12 +297,19 @@ async def start_activity_command(interaction: discord.Interaction):
 
 @client.tree.command(name="echo", description="Chat anonim melalui bot")
 async def echo_command(interaction: discord.Interaction, message: str):
+    """
+    Command untuk chat anonim, bot akan mengirim pesan yang dimasukkan pengguna tanpa menampilkan siapa yang memicu command.
+    """
     try:
-        # Bot mengirimkan pesan yang dimasukkan oleh user
-        await interaction.response.send_message(message)
+        # Menunda tanggapan ke pengguna untuk menyembunyikan siapa yang menggunakan command
+        await interaction.response.defer(ephemeral=True)
+
+        # Bot mengirim pesan ke channel secara anonim
+        await interaction.followup.send(message)
     except Exception as e:
         # Menangani error jika ada kesalahan
-        await interaction.response.send_message(f"Terjadi kesalahan: {e}")
+        await interaction.followup.send(f"Terjadi kesalahan: {e}")
+
             
 # Fungsi untuk mengirim pesan berdasarkan input pengguna
 async def send_message(message: Message, user_message: str) -> None:
