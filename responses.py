@@ -16,6 +16,8 @@ def get_response(user_input: str) -> str:
         return 'HBD OI OI OI OI'
     elif 'p adu' in lowered:
         return 'HUH !?'
+    elif 'bangsat' in lowered:
+        return 'pritttttt!!!!!!'
     else:
         return choice(['',
                        '',
