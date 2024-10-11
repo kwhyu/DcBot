@@ -142,7 +142,7 @@ async def help_command(interaction: discord.Interaction):
 
 @client.tree.command(name="settings", description="Open the bot's settings dashboard")
 async def settings_command(interaction: discord.Interaction):
-    dashboard_url = "http://your-flask-app-url.com"  # Ganti dengan URL yang sesuai
+    dashboard_url = "https://puffy-hazel-freckle.glitch.me/"  # Ganti dengan URL yang sesuai
     await interaction.response.send_message(f"You can configure the bot's settings here: [Dashboard]({dashboard_url})")
 
 @client.tree.command(name="ping", description="Cek latensi bot")
