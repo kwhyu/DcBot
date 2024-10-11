@@ -294,6 +294,15 @@ async def start_activity_command(interaction: discord.Interaction):
     await client.change_presence(activity=activity)
 
     await interaction.response.send_message(f"Aktivitas '{activity_name}' dimulai! Bergabunglah di {activity_url}")
+
+@client.tree.command(name="echo", description="Chat anonim melalui bot")
+async def echo_command(interaction: discord.Interaction, message: str):
+    try:
+        # Bot mengirimkan pesan yang dimasukkan oleh user
+        await interaction.response.send_message(message)
+    except Exception as e:
+        # Menangani error jika ada kesalahan
+        await interaction.response.send_message(f"Terjadi kesalahan: {e}")
             
 # Fungsi untuk mengirim pesan berdasarkan input pengguna
 async def send_message(message: Message, user_message: str) -> None:
