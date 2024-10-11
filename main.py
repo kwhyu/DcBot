@@ -2,7 +2,7 @@ from typing import Final
 import os
 from dotenv import load_dotenv
 import discord
-from discord import Intents, Client, Message, Embed, VoiceChannel, Guild, Member, File, Activity, ActivityType
+from discord import Intents, Client, Message, Embed, VoiceChannel, Guild, Member, File, Activity, ActivityType, ButtonStyle
 from discord.ext import commands
 from discord import FFmpegPCMAudio
 import random
@@ -10,6 +10,8 @@ from easy_pil import Editor, load_image_async, Font
 from responses import get_response
 import openai
 import random
+import asyncio
+from discord.ui import Button, View
 
 # Memuat token dari file .env
 #load_dotenv()
@@ -426,6 +428,120 @@ async def on_message(message: Message) -> None:
     print(f'[{channel}] {username}: "{user_message}"')
 
     await send_message(message, user_message)
+
+
+# GAME SECTION
+
+# Ukuran papan permainan
+BOARD_SIZE = 10
+
+# Simbol untuk bagian ular dan makanan
+SNAKE_CHAR = "🐍"
+FOOD_CHAR = "🍎"
+EMPTY_CHAR = "⬛"
+
+# Perintah arah
+DIRECTIONS = {
+    "up": (-1, 0),
+    "down": (1, 0),
+    "left": (0, -1),
+    "right": (0, 1)
+}
+
+# Snake Game class
+class SnakeGame:
+    def __init__(self, ctx):
+        self.ctx = ctx
+        self.board = [[EMPTY_CHAR for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
+        self.snake = [(BOARD_SIZE // 2, BOARD_SIZE // 2)]  # Start di tengah
+        self.direction = DIRECTIONS["up"]
+        self.food = self.place_food()
+        self.score = 0
+        self.game_over = False
+
+    def place_food(self):
+        while True:
+            x, y = random.randint(0, BOARD_SIZE - 1), random.randint(0, BOARD_SIZE - 1)
+            if (x, y) not in self.snake:
+                self.board[x][y] = FOOD_CHAR
+                return (x, y)
+
+    def render_board(self):
+        board_copy = [row[:] for row in self.board]
+        for x, y in self.snake:
+            board_copy[x][y] = SNAKE_CHAR
+        return "\n".join("".join(row) for row in board_copy)
+
+    def move_snake(self):
+        # Hitung posisi baru kepala ular
+        head_x, head_y = self.snake[0]
+        delta_x, delta_y = self.direction
+        new_head = (head_x + delta_x, head_y + delta_y)
+
+        # Periksa jika ular menabrak dinding atau tubuhnya sendiri
+        if (
+            new_head[0] < 0 or new_head[0] >= BOARD_SIZE or
+            new_head[1] < 0 or new_head[1] >= BOARD_SIZE or
+            new_head in self.snake
+        ):
+            self.game_over = True
+            return
+
+        # Jika makan makanan
+        if new_head == self.food:
+            self.snake = [new_head] + self.snake  # Perpanjang ular
+            self.food = self.place_food()  # Tempatkan makanan baru
+            self.score += 1
+        else:
+            self.snake = [new_head] + self.snake[:-1]  # Gerakkan ular
+
+# View untuk tombol kontrol
+class SnakeControlView(View):
+    def __init__(self, game):
+        super().__init__(timeout=None)
+        self.game = game
+
+    @discord.ui.button(label="⬆️", style=ButtonStyle.primary)
+    async def up_button(self, interaction: discord.Interaction, button: Button):
+        self.game.direction = DIRECTIONS["up"]
+        await self.update_game(interaction)
+
+    @discord.ui.button(label="⬅️", style=ButtonStyle.primary)
+    async def left_button(self, interaction: discord.Interaction, button: Button):
+        self.game.direction = DIRECTIONS["left"]
+        await self.update_game(interaction)
+
+    @discord.ui.button(label="⬇️", style=ButtonStyle.primary)
+    async def down_button(self, interaction: discord.Interaction, button: Button):
+        self.game.direction = DIRECTIONS["down"]
+        await self.update_game(interaction)
+
+    @discord.ui.button(label="➡️", style=ButtonStyle.primary)
+    async def right_button(self, interaction: discord.Interaction, button: Button):
+        self.game.direction = DIRECTIONS["right"]
+        await self.update_game(interaction)
+
+    async def update_game(self, interaction):
+        self.game.move_snake()
+        if self.game.game_over:
+            await interaction.response.edit_message(content=f"Game Over! Skor akhir: {self.game.score}", view=None)
+            await self.game.ctx.send(f"{self.game.ctx.user.mention} mendapatkan skor {self.game.score}!")
+        else:
+            embed = discord.Embed(title="Snake Game", description=f"Skor: {self.game.score}\n{self.game.render_board()}")
+            await interaction.response.edit_message(embed=embed)
+
+# Slash Command untuk memulai game
+@tree.command(name="snake-game", description="play snake game")
+async def start_game(interaction: discord.Interaction):
+    game = SnakeGame(interaction)
+    embed = discord.Embed(title="Snake Game", description=f"Skor: {game.score}\n{game.render_board()}")
+
+    # Menambahkan kontrol dengan tombol di bawah kanvas
+    view = SnakeControlView(game)
+    await interaction.response.send_message(embed=embed, view=view)
+
+
+# MAIN
 
 @client.event
 async def on_ready():
