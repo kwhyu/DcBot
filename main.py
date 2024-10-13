@@ -12,8 +12,9 @@ import openai
 import random
 import asyncio
 from discord.ui import Button, View
-import youtube_dl
+import yt_dlp
 import urllib.parse, urllib.request
+import re
 
 # Memuat token dari file .env
 #load_dotenv()
@@ -579,11 +580,8 @@ ydl_opts = {
 # Command untuk play lagu dari URL atau nama lagu
 @client.tree.command(name="play", description="Play a song from YouTube using URL or song name")
 async def play_command(interaction: discord.Interaction, search: str):
-    """
-    Command untuk memutar lagu menggunakan URL YouTube atau nama lagu.
-    """
     try:
-        await interaction.response.defer(ephemeral=True)  # Menunda tanggapan agar command tidak tampak
+        await interaction.response.defer(ephemeral=True)
         if interaction.guild.voice_client is None:
             if interaction.user.voice:
                 channel = interaction.user.voice.channel
@@ -596,20 +594,19 @@ async def play_command(interaction: discord.Interaction, search: str):
         if "youtube.com/watch?v=" in search or "youtu.be/" in search:
             url = search
         else:
-            # Jika input adalah kata kunci, lakukan pencarian di YouTube
+            # Pencarian di YouTube
             query_string = urllib.parse.urlencode({'search_query': search})
             html_content = urllib.request.urlopen('http://www.youtube.com/results?' + query_string)
             search_results = re.findall(r'/watch\?v=(.{11})', html_content.read().decode())
             url = 'http://www.youtube.com/watch?v=' + search_results[0]
 
-        # Memutar lagu
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        # Memutar lagu menggunakan yt-dlp
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             url2 = info['url']
             source = await discord.FFmpegOpusAudio.from_probe(url2)
             interaction.guild.voice_client.play(source)
 
-        # Bot mengirim pesan secara anonim bahwa lagu sedang diputar
         await interaction.followup.send(f"Memutar lagu: {info['title']}", ephemeral=True)
     except Exception as e:
         await interaction.followup.send(f"Terjadi kesalahan: {e}", ephemeral=True)
