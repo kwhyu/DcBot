@@ -571,11 +571,15 @@ async def start_game(interaction: discord.Interaction):
 
 #YOUTUBE
 
-# # YoutubeDL options
-# ydl_opts = {
-#     'format': 'bestaudio/best',
-#     'noplaylist': 'True'
-# }
+# Queue untuk autoplay
+music_queue = []
+autoplay_enabled = False
+
+# YoutubeDL options
+ydl_opts = {
+    'format': 'bestaudio/best',
+    'noplaylist': 'True'
+}
 
 # # Command untuk play lagu dari URL atau nama lagu
 # @client.tree.command(name="play", description="Play a song from YouTube using URL or song name")
