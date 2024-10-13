@@ -12,6 +12,8 @@ import openai
 import random
 import asyncio
 from discord.ui import Button, View
+import youtube_dl
+import urllib.parse, urllib.request
 
 # Memuat token dari file .env
 #load_dotenv()
@@ -139,6 +141,11 @@ async def on_member_join(member: Member):
 #     embed.add_field(name="/echo", value="Send an anonymous message.", inline=False)
 #     embed.add_field(name="/random", value="Get a random selection from a list.", inline=False)
 #     embed.add_field(name="/settings", value="Open the dashboard to configure the bot.", inline=False)
+#     embed.add_field(name="/snake-game", value="Play snake game.", inline=False)
+#     embed.add_field(name="/play", value="Play youtube", inline=False)
+#     embed.add_field(name="/play", value="Stop youtube", inline=False)
+
+
 
 #     await interaction.response.send_message(embed=embed)
 
@@ -559,6 +566,68 @@ async def start_game(interaction: discord.Interaction):
     
     # Mulai loop permainan otomatis
     await game_loop(game, interaction)
+
+
+#YOUTUBE
+
+# YoutubeDL options
+ydl_opts = {
+    'format': 'bestaudio/best',
+    'noplaylist': 'True'
+}
+
+# Command untuk play lagu dari URL atau nama lagu
+@client.tree.command(name="play", description="Play a song from YouTube using URL or song name")
+async def play_command(interaction: discord.Interaction, search: str):
+    """
+    Command untuk memutar lagu menggunakan URL YouTube atau nama lagu.
+    """
+    try:
+        await interaction.response.defer(ephemeral=True)  # Menunda tanggapan agar command tidak tampak
+        if interaction.guild.voice_client is None:
+            if interaction.user.voice:
+                channel = interaction.user.voice.channel
+                await channel.connect()
+            else:
+                await interaction.followup.send("Kamu harus berada di voice channel dulu!", ephemeral=True)
+                return
+
+        # Jika input adalah URL YouTube
+        if "youtube.com/watch?v=" in search or "youtu.be/" in search:
+            url = search
+        else:
+            # Jika input adalah kata kunci, lakukan pencarian di YouTube
+            query_string = urllib.parse.urlencode({'search_query': search})
+            html_content = urllib.request.urlopen('http://www.youtube.com/results?' + query_string)
+            search_results = re.findall(r'/watch\?v=(.{11})', html_content.read().decode())
+            url = 'http://www.youtube.com/watch?v=' + search_results[0]
+
+        # Memutar lagu
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            url2 = info['url']
+            source = await discord.FFmpegOpusAudio.from_probe(url2)
+            interaction.guild.voice_client.play(source)
+
+        # Bot mengirim pesan secara anonim bahwa lagu sedang diputar
+        await interaction.followup.send(f"Memutar lagu: {info['title']}", ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f"Terjadi kesalahan: {e}", ephemeral=True)
+
+# Command untuk stop lagu
+@client.tree.command(name="stop", description="Stop the currently playing song")
+async def stop_command(interaction: discord.Interaction):
+    """
+    Command untuk menghentikan lagu yang sedang diputar.
+    """
+    try:
+        if interaction.guild.voice_client and interaction.guild.voice_client.is_playing():
+            interaction.guild.voice_client.stop()
+            await interaction.response.send_message("Lagu telah dihentikan.", ephemeral=True)
+        else:
+            await interaction.response.send_message("Tidak ada lagu yang sedang diputar.", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"Terjadi kesalahan: {e}", ephemeral=True)
 
 
 # MAIN
