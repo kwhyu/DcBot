@@ -5,3 +5,4 @@ ffmpeg
 PyNaCl
 openai==0.28.0
 flask
+youtube_dl
