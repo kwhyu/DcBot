@@ -571,15 +571,77 @@ async def start_game(interaction: discord.Interaction):
 
 #YOUTUBE
 
-# YoutubeDL options
-ydl_opts = {
-    'format': 'bestaudio/best',
-    'noplaylist': 'True'
-}
+# # YoutubeDL options
+# ydl_opts = {
+#     'format': 'bestaudio/best',
+#     'noplaylist': 'True'
+# }
 
-# Command untuk play lagu dari URL atau nama lagu
+# # Command untuk play lagu dari URL atau nama lagu
+# @client.tree.command(name="play", description="Play a song from YouTube using URL or song name")
+# async def play_command(interaction: discord.Interaction, search: str):
+#     try:
+#         await interaction.response.defer(ephemeral=True)
+#         if interaction.guild.voice_client is None:
+#             if interaction.user.voice:
+#                 channel = interaction.user.voice.channel
+#                 await channel.connect()
+#             else:
+#                 await interaction.followup.send("Kamu harus berada di voice channel dulu!", ephemeral=True)
+#                 return
+
+#         # Jika input adalah URL YouTube
+#         if "youtube.com/watch?v=" in search or "youtu.be/" in search:
+#             url = search
+#         else:
+#             # Pencarian di YouTube
+#             query_string = urllib.parse.urlencode({'search_query': search})
+#             html_content = urllib.request.urlopen('http://www.youtube.com/results?' + query_string)
+#             search_results = re.findall(r'/watch\?v=(.{11})', html_content.read().decode())
+#             url = 'http://www.youtube.com/watch?v=' + search_results[0]
+
+#         # Memutar lagu menggunakan yt-dlp
+#         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+#             info = ydl.extract_info(url, download=False)
+#             url2 = info['url']
+#             source = await discord.FFmpegOpusAudio.from_probe(url2)
+#             interaction.guild.voice_client.play(source)
+
+#         await interaction.followup.send(f"Memutar lagu: {info['title']}", ephemeral=True)
+#     except Exception as e:
+#         await interaction.followup.send(f"Terjadi kesalahan: {e}", ephemeral=True)
+
+# Fungsi untuk memutar lagu
+async def play_music(interaction: discord.Interaction, url: str):
+    try:
+        voice_client = interaction.guild.voice_client
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            url2 = info['url']
+            source = await discord.FFmpegOpusAudio.from_probe(url2)
+            voice_client.play(source, after=lambda e: asyncio.run_coroutine_threadsafe(next_song(interaction), client.loop))
+            await interaction.followup.send(f"Memutar lagu: {info['title']}", ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f"Terjadi kesalahan: {e}", ephemeral=True)
+
+# Fungsi untuk menemukan lagu berikutnya
+async def find_next_song(current_song_title: str):
+    query_string = urllib.parse.urlencode({'search_query': current_song_title + ' next'})
+    html_content = urllib.request.urlopen('http://www.youtube.com/results?' + query_string)
+    search_results = re.findall(r'/watch\?v=(.{11})', html_content.read().decode())
+    return 'http://www.youtube.com/watch?v=' + search_results[0]
+
+# Fungsi untuk memainkan lagu berikutnya
+async def next_song(interaction: discord.Interaction):
+    global music_queue
+    if autoplay_enabled and len(music_queue) > 0:
+        next_song_url = await find_next_song(music_queue.pop(0))
+        await play_music(interaction, next_song_url)
+
+# Command untuk memutar lagu dari URL atau nama lagu
 @client.tree.command(name="play", description="Play a song from YouTube using URL or song name")
 async def play_command(interaction: discord.Interaction, search: str):
+    global music_queue
     try:
         await interaction.response.defer(ephemeral=True)
         if interaction.guild.voice_client is None:
@@ -600,16 +662,25 @@ async def play_command(interaction: discord.Interaction, search: str):
             search_results = re.findall(r'/watch\?v=(.{11})', html_content.read().decode())
             url = 'http://www.youtube.com/watch?v=' + search_results[0]
 
-        # Memutar lagu menggunakan yt-dlp
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            url2 = info['url']
-            source = await discord.FFmpegOpusAudio.from_probe(url2)
-            interaction.guild.voice_client.play(source)
+        # Tambahkan lagu ke queue
+        music_queue.append(search)
 
-        await interaction.followup.send(f"Memutar lagu: {info['title']}", ephemeral=True)
+        # Memutar lagu pertama dalam queue
+        if not interaction.guild.voice_client.is_playing():
+            await play_music(interaction, url)
     except Exception as e:
         await interaction.followup.send(f"Terjadi kesalahan: {e}", ephemeral=True)
+
+# Command untuk mengaktifkan atau menonaktifkan autoplay
+@tree.command(name="autoplay", description="Enable or disable autoplay")
+async def autoplay_command(interaction: discord.Interaction):
+    global autoplay_enabled
+    try:
+        autoplay_enabled = not autoplay_enabled
+        status = "diaktifkan" if autoplay_enabled else "dinonaktifkan"
+        await interaction.response.send_message(f"Autoplay telah {status}.", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"Terjadi kesalahan: {e}", ephemeral=True)
 
 # Command untuk stop lagu
 @client.tree.command(name="stop", description="Stop the currently playing song")
