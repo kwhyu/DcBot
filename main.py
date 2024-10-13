@@ -672,7 +672,7 @@ async def play_command(interaction: discord.Interaction, search: str):
         await interaction.followup.send(f"Terjadi kesalahan: {e}", ephemeral=True)
 
 # Command untuk mengaktifkan atau menonaktifkan autoplay
-@tree.command(name="autoplay", description="Enable or disable autoplay")
+@client.tree.command(name="autoplay", description="Enable or disable autoplay")
 async def autoplay_command(interaction: discord.Interaction):
     global autoplay_enabled
     try:
