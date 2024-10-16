@@ -38,6 +38,8 @@ MERGE_RULES = {
     "🧺🧺": "🥖"   # Two Baskets make Bread
 }
 
+load_dotenv()
+
 TOKEN = os.getenv('DISCORD_TOKEN')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 CUSTOM_ACTIVITY_ID = os.getenv('CUSTOM_ACTIVITY_ID')
