@@ -44,6 +44,14 @@ CUSTOM_ACTIVITY_ID = os.getenv('CUSTOM_ACTIVITY_ID')
 
 #Mongo DB
 MONGO_URL = os.getenv('MONGO_URL')
+
+# Ensure the variables are correctly loaded
+if not MONGO_URL:
+    raise ValueError("MongoDB URL is not set in the environment variables.")
+if not TOKEN:
+    raise ValueError("Discord token is not set in the environment variables.")
+    
+client_mongo = MongoClient(MONGO_URL)    
 db = client_mongo['db_nais'] 
 user_collection = db['user_chat_data']
 
