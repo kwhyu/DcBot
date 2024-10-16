@@ -51,9 +51,13 @@ if not MONGO_URL:
 if not TOKEN:
     raise ValueError("Discord token is not set in the environment variables.")
     
-client_mongo = MongoClient(MONGO_URL)    
-db = client_mongo['db_nais'] 
-user_collection = db['user_chat_data']
+try:
+    client_mongo = MongoClient(MONGO_URL)
+    db = client_mongo['db_nais']
+    user_collection = db['user_chat_data']
+    print("MongoDB connection established.")
+except Exception as e:
+    raise Exception("Error connecting to MongoDB: ", e)
 
 # Pengaturan bot
 intents: Intents = Intents.default()
