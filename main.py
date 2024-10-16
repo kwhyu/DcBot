@@ -16,6 +16,7 @@ import yt_dlp
 import urllib.parse, urllib.request
 import re
 from pymongo import MongoClient
+import math
 
 # Memuat token dari file .env
 #load_dotenv()
