@@ -15,6 +15,7 @@ from discord.ui import Button, View
 import yt_dlp
 import urllib.parse, urllib.request
 import re
+from pymongo import MongoClient
 
 # Memuat token dari file .env
 #load_dotenv()
@@ -40,6 +41,11 @@ MERGE_RULES = {
 TOKEN = os.getenv('DISCORD_TOKEN')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 CUSTOM_ACTIVITY_ID = os.getenv('CUSTOM_ACTIVITY_ID')
+
+#Mongo DB
+MONGO_URL = os.getenv('MONGO_URL')
+db = client_mongo['db_nais'] 
+user_collection = db['user_chat_data']
 
 # Pengaturan bot
 intents: Intents = Intents.default()
@@ -428,12 +434,43 @@ async def on_ready() -> None:
 async def on_message(message: Message) -> None:
     if message.author == client.user:
         return
-    
+
     username: str = str(message.author)
     user_message: str = message.content
     channel: str = str(message.channel)
 
     print(f'[{channel}] {username}: "{user_message}"')
+
+    user_id = str(message.author.id)
+    # Fetch user data from MongoDB
+    user_data = user_collection.find_one({'id_user': user_id})
+    
+    if user_data:
+        chat_count = user_data['chat_count'] + 1  # Increment chat count
+        level = user_data['level']
+    else:
+        chat_count = 1
+        level = 0
+
+    # Calculate new level
+    new_level = calculate_level(chat_count)
+
+    # Update or insert user data in MongoDB
+    if user_data:
+        user_collection.update_one(
+            {'id_user': user_id}, 
+            {'$set': {'chat_count': chat_count, 'level': new_level}}
+        )
+    else:
+        user_collection.insert_one({
+            'id_user': user_id,
+            'chat_count': chat_count,
+            'level': new_level
+        })
+
+    # Send a message if the user's level increased
+    if new_level > level:
+        await message.channel.send(f"{message.author.mention}, congratulations! You've reached level {new_level}!")
 
     await send_message(message, user_message)
 
@@ -666,6 +703,29 @@ async def stop_command(interaction: discord.Interaction):
             await interaction.response.send_message("Tidak ada lagu yang sedang diputar.", ephemeral=True)
     except Exception as e:
         await interaction.response.send_message(f"Terjadi kesalahan: {e}", ephemeral=True)
+
+
+#LEVELING
+
+# Function to calculate level based on chat count
+def calculate_level(chat_count):
+    level = math.floor(math.log(chat_count, 5))
+    return level
+
+# Command to check user level and chat count
+@client.tree.command(name="check-level", description="Check your chat level and message count.")
+async def check_level(interaction: discord.Interaction):
+    user_id = str(interaction.user.id)
+    
+    # Fetch user data from MongoDB
+    user_data = user_collection.find_one({'id_user': user_id})
+
+    if user_data:
+        chat_count = user_data['chat_count']
+        level = user_data['level']
+        await interaction.response.send_message(f"{interaction.user.mention}, you have sent {chat_count} messages and are currently at level {level}.")
+    else:
+        await interaction.response.send_message(f"{interaction.user.mention}, you have not sent any messages yet.")
 
 # MAIN
 
