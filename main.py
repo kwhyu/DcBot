@@ -113,7 +113,7 @@ ffmpeg_options = {
 
 # ID saluran sambutan
 WELCOME_CHANNEL_ID: Final[int] = 1227942494684057705
-WELCOME_CHANNEL_ID2: Final[int] = 1236526200306929786
+WELCOME_CHANNEL_ID2: Final[int] = 916557804150591492
 
 WELCOME_IMAGE: Final[str] = "pic1.jpg"
 
