@@ -631,6 +631,9 @@ stay_in_channel = False
 last_search_time = 0 
 search_cooldown = 5
 
+current_song_info = {"title": None, "url": None}
+
+
 # YoutubeDL options
 ydl_opts = {
     'format': 'bestaudio/best',
@@ -645,6 +648,11 @@ async def play_music(interaction: discord.Interaction, url: str):
             info = ydl.extract_info(url, download=False)
             url2 = info['url']
             source = await discord.FFmpegOpusAudio.from_probe(url2)
+
+            # Simpan judul dan URL lagu saat ini
+            current_song_info["title"] = info.get('title', 'Unknown')
+            current_song_info["url"] = url
+            
             voice_client.play(source, after=lambda e: asyncio.run_coroutine_threadsafe(next_song(interaction), client.loop))
             await interaction.followup.send(f"Memutar lagu: {info['title']}", ephemeral=False)
     except Exception as e:
@@ -669,14 +677,27 @@ async def find_next_song(current_song_title: str):
         await asyncio.sleep(search_cooldown - (current_time - last_search_time))
 
     # Lakukan pencarian YouTube
-    query_string = urllib.parse.urlencode({'search_query': current_song_title + ' next'})
-    html_content = urllib.request.urlopen('http://www.youtube.com/results?' + query_string)
-    search_results = re.findall(r'/watch\?v=(.{11})', html_content.read().decode())
+    # query_string = urllib.parse.urlencode({'search_query': current_song_title + ' next'})
+    # html_content = urllib.request.urlopen('http://www.youtube.com/results?' + query_string)
+    # search_results = re.findall(r'/watch\?v=(.{11})', html_content.read().decode())
     
-    next_song_url = 'http://www.youtube.com/watch?v=' + search_results[0]
+    # next_song_url = 'http://www.youtube.com/watch?v=' + search_results[0]
     
-    last_search_time = time.time()  # Update waktu pencarian terakhir
-    return next_song_url
+    # last_search_time = time.time()  # Update waktu pencarian terakhir
+    # return next_song_url
+    try:
+        # Mencari lagu berikutnya di YouTube
+        query_string = urllib.parse.urlencode({'search_query': current_song_title + ' next'})
+        html_content = urllib.request.urlopen('http://www.youtube.com/results?' + query_string)
+        search_results = re.findall(r'/watch\?v=(.{11})', html_content.read().decode())
+        
+        if search_results:
+            return 'http://www.youtube.com/watch?v=' + search_results[0]
+        else:
+            return None
+    except Exception as e:
+        print(f"Error while finding next song: {e}")
+        return None
 
 # Fungsi untuk memainkan lagu berikutnya
 # async def next_song(interaction: discord.Interaction):
@@ -703,28 +724,33 @@ async def find_next_song(current_song_title: str):
 
 # Fungsi untuk memainkan lagu berikutnya atau mencari lagu secara otomatis
 async def next_song(interaction: discord.Interaction):
-    global music_queue, autoplay_enabled
-
-    if music_queue:
-        # Jika ada lagu di antrian, mainkan lagu berikutnya
-        next_song_url = music_queue.pop(0)
-        await play_command(interaction, next_song_url)
-    elif autoplay_enabled:
-        # Jika autoplay aktif dan tidak ada lagu di queue, cari rekomendasi lagu berikutnya
-        try:
-            current_song_title = interaction.guild.voice_client.source.title
+    global music_queue, autoplay_enabled, current_song_info
+    try:
+        if music_queue:
+            # Memutar lagu berikutnya dari antrian
+            next_song_url = music_queue.pop(0)
+            await play_music(interaction, next_song_url)
+        elif autoplay_enabled:
+            # Jika autoplay diaktifkan, cari lagu otomatis berdasarkan lagu saat ini
+            current_song_title = current_song_info.get("title", "Unknown")
+            
+            # Cari lagu berikutnya
             next_song_url = await find_next_song(current_song_title)
-            await play_command(interaction, next_song_url)
-        except Exception as e:
-            await interaction.followup.send(f"Autoplay error: {e}", ephemeral=True)
-    else:
-        # Jika queue kosong dan autoplay dinonaktifkan
-        if not stay_in_channel:
-            # Jika 24/7 mode nonaktif, bot akan keluar dari channel
-            await leave_voice_channel(interaction.guild)
+            if next_song_url:
+                await play_music(interaction, next_song_url)
+            else:
+                await interaction.followup.send("Gagal menemukan lagu berikutnya. Autoplay dinonaktifkan.", ephemeral=True)
+                autoplay_enabled = False  # Nonaktifkan autoplay jika gagal
         else:
-            # Jika 24/7 mode aktif, bot tetap di channel tanpa memutar lagu
-            await interaction.followup.send("Queue kosong, menunggu perintah selanjutnya.", ephemeral=True)
+            # Berhenti memutar jika queue kosong dan autoplay dinonaktifkan
+            await interaction.followup.send("Tidak ada lagu di antrian dan autoplay dinonaktifkan.", ephemeral=True)
+        
+        # Jika menggunakan 24-7 mode, bot tidak meninggalkan voice channel
+        if not stay_in_channel and not music_queue and not autoplay_enabled:
+            await interaction.guild.voice_client.disconnect()
+
+    except Exception as e:
+        print(f"Error in next_song: {e}")
 
 
 # Command untuk memutar lagu dari URL atau nama lagu
@@ -791,10 +817,11 @@ async def play_command(interaction: discord.Interaction, search: str):
 
         # Cek apakah queue tidak kosong dan tidak ada lagu yang sedang diputar
         if music_queue and not interaction.guild.voice_client.is_playing():
+            await next_song(interaction
             # Memutar lagu pertama di queue
-            next_song_url = music_queue.pop(0)
-            await play_music(interaction, next_song_url)
-            await interaction.followup.send("Sedang memutar lagu pertama di antrian.", ephemeral=False)
+            # next_song_url = music_queue.pop(0)
+            # await play_music(interaction, next_song_url)
+            # await interaction.followup.send("Sedang memutar lagu pertama di antrian.", ephemeral=False)
         else:
             # Informasikan posisi lagu di queue
             queue_position = len(music_queue)
