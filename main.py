@@ -789,7 +789,7 @@ async def next_song(interaction: discord.Interaction):
 # Command untuk memutar lagu dari URL atau nama lagu
 @client.tree.command(name="play", description="Play a song from YouTube using URL or song name")
 async def play_command(interaction: discord.Interaction, search: str):
-    global music_queue
+    global music_queue, current_song_info
     try:
         await interaction.response.defer(ephemeral=False)
         
@@ -813,37 +813,18 @@ async def play_command(interaction: discord.Interaction, search: str):
             url = 'http://www.youtube.com/watch?v=' + search_results[0]
 
         # Tambahkan lagu ke queue
-        music_queue.append(url)  # Simpan URL di queue
+        music_queue.append(url)
 
-        # Cek apakah queue tidak kosong dan tidak ada lagu yang sedang diputar
-        if music_queue and not interaction.guild.voice_client.is_playing():
-            await next_song(interaction)
-            # Memutar lagu pertama di queue
-            # next_song_url = music_queue.pop(0)
-            # await play_music(interaction, next_song_url)
-            # await interaction.followup.send("Sedang memutar lagu pertama di antrian.", ephemeral=False)
+        # Cek apakah ada lagu yang sedang diputar, jika tidak, putar lagu pertama dari queue
+        if not interaction.guild.voice_client.is_playing():
+            # Ambil lagu pertama dari queue
+            first_song_url = music_queue.pop(0)
+            await play_music(interaction, first_song_url)  # Mulai memutar lagu
         else:
-            # Informasikan posisi lagu di queue
+            # Jika ada lagu yang sedang diputar, beri tahu pengguna bahwa lagu telah ditambahkan ke antrian
             queue_position = len(music_queue)
             await interaction.followup.send(f"Lagu telah ditambahkan ke antrian di posisi ke-{queue_position}.", ephemeral=False)
-
-        # # If there's no song currently playing, play the first song in the queue
-        # if not interaction.guild.voice_client.is_playing():
-        #     next_song_url = music_queue.pop(0)
-        #     await play_command(interaction, music_queue.pop(0))  # Play the first song in the queue
-        #     await interaction.followup.send("Sedang memutar lagu pertama di antrian.", ephemeral=False)
-        # else:
-        #     # Inform the user of the song’s position in the queue
-        #     queue_position = len(music_queue)
-        #     await interaction.followup.send(f"Lagu telah ditambahkan ke antrian di posisi ke-{queue_position}.", ephemeral=False)
         
-        # Informasi posisi queue
-        # queue_position = len(music_queue)
-        # await interaction.followup.send(f"Lagu telah ditambahkan ke antrian di posisi ke-{queue_position}.")
-
-        # Jika tidak ada lagu yang sedang diputar, mulai memutar lagu pertama dalam queue
-        # if not interaction.guild.voice_client.is_playing():
-        #     await play_music(interaction, music_queue.pop(0))  # Putar lagu pertama dalam queue
     except Exception as e:
         await interaction.followup.send(f"Terjadi kesalahan: {e}", ephemeral=True)
 
