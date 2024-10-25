@@ -724,72 +724,30 @@ async def find_next_song(current_song_title: str):
 
 # Fungsi untuk memainkan lagu berikutnya atau mencari lagu secara otomatis
 async def next_song(interaction: discord.Interaction):
-    global music_queue, autoplay_enabled, current_song_info
-    try:
-        if music_queue:
-            # Memutar lagu berikutnya dari antrian
-            next_song_url = music_queue.pop(0)
+    global music_queue, autoplay_enabled
+
+    if music_queue:
+        # Jika ada lagu di antrian, putar lagu berikutnya dari antrian
+        next_song_url = music_queue.pop(0)
+        await play_music(interaction, next_song_url)
+    elif autoplay_enabled:
+        # Jika antrian kosong dan autoplay diaktifkan, cari lagu otomatis dari rekomendasi YouTube
+        current_song_info = getattr(interaction.guild.voice_client.source, "title", None)
+        if current_song_info:
+            next_song_url = await find_next_song(current_song_info)
             await play_music(interaction, next_song_url)
-        elif autoplay_enabled:
-            # Jika autoplay diaktifkan, cari lagu otomatis berdasarkan lagu saat ini
-            current_song_title = current_song_info.get("title", "Unknown")
-            
-            # Cari lagu berikutnya
-            next_song_url = await find_next_song(current_song_title)
-            if next_song_url:
-                await play_music(interaction, next_song_url)
-            else:
-                await interaction.followup.send("Gagal menemukan lagu berikutnya. Autoplay dinonaktifkan.", ephemeral=True)
-                autoplay_enabled = False  # Nonaktifkan autoplay jika gagal
         else:
-            # Berhenti memutar jika queue kosong dan autoplay dinonaktifkan
-            await interaction.followup.send("Tidak ada lagu di antrian dan autoplay dinonaktifkan.", ephemeral=True)
-        
-        # Jika menggunakan 24-7 mode, bot tidak meninggalkan voice channel
-        if not stay_in_channel and not music_queue and not autoplay_enabled:
-            await interaction.guild.voice_client.disconnect()
+            # Jika tidak ada info lagu, kirim pesan bahwa autoplay gagal
+            await interaction.followup.send("Autoplay gagal menemukan lagu berikutnya.", ephemeral=True)
+    else:
+        # Jika antrian kosong dan autoplay dinonaktifkan
+        await interaction.followup.send("Tidak ada lagu di antrian dan autoplay dinonaktifkan.", ephemeral=True)
 
-    except Exception as e:
-        print(f"Error in next_song: {e}")
-
-
-# Command untuk memutar lagu dari URL atau nama lagu
-# @client.tree.command(name="play", description="Play a song from YouTube using URL or song name")
-# async def play_command(interaction: discord.Interaction, search: str):
-#     global music_queue
-#     try:
-#         await interaction.response.defer(ephemeral=False)
-#         if interaction.guild.voice_client is None:
-#             if interaction.user.voice:
-#                 channel = interaction.user.voice.channel
-#                 await channel.connect()
-#             else:
-#                 await interaction.followup.send("Kamu harus berada di voice channel dulu!", ephemeral=True)
-#                 return
-
-#         # Jika input adalah URL YouTube
-#         if "youtube.com/watch?v=" in search or "youtu.be/" in search:
-#             url = search
-#         else:
-#             # Pencarian di YouTube
-#             query_string = urllib.parse.urlencode({'search_query': search})
-#             html_content = urllib.request.urlopen('http://www.youtube.com/results?' + query_string)
-#             search_results = re.findall(r'/watch\?v=(.{11})', html_content.read().decode())
-#             url = 'http://www.youtube.com/watch?v=' + search_results[0]
-
-#         # Tambahkan lagu ke queue
-#         music_queue.append(url)  # Simpan URL di queue
-
-#         # Memutar lagu pertama dalam queue
-#         if not interaction.guild.voice_client.is_playing():
-#             await play_music(interaction, music_queue.pop(0))  # Putar lagu pertama dalam queue
-#     except Exception as e:
-#         await interaction.followup.send(f"Terjadi kesalahan: {e}", ephemeral=True)
 
 # Command untuk memutar lagu dari URL atau nama lagu
 @client.tree.command(name="play", description="Play a song from YouTube using URL or song name")
 async def play_command(interaction: discord.Interaction, search: str):
-    global music_queue, current_song_info
+    global music_queue
     try:
         await interaction.response.defer(ephemeral=False)
         
@@ -815,18 +773,16 @@ async def play_command(interaction: discord.Interaction, search: str):
         # Tambahkan lagu ke queue
         music_queue.append(url)
 
-        # Cek apakah ada lagu yang sedang diputar, jika tidak, putar lagu pertama dari queue
+        # Jika bot tidak sedang memutar lagu, mulai memutar lagu dari queue
         if not interaction.guild.voice_client.is_playing():
-            # Ambil lagu pertama dari queue
-            first_song_url = music_queue.pop(0)
-            await play_music(interaction, first_song_url)  # Mulai memutar lagu
+            await next_song(interaction)  # Mulai memainkan lagu berikutnya dari antrian
         else:
-            # Jika ada lagu yang sedang diputar, beri tahu pengguna bahwa lagu telah ditambahkan ke antrian
+            # Beri tahu pengguna posisi lagu di antrian jika sedang ada lagu yang diputar
             queue_position = len(music_queue)
             await interaction.followup.send(f"Lagu telah ditambahkan ke antrian di posisi ke-{queue_position}.", ephemeral=False)
-        
     except Exception as e:
         await interaction.followup.send(f"Terjadi kesalahan: {e}", ephemeral=True)
+
 
 
 # Command untuk toggle autoplay
