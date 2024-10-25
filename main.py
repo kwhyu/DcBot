@@ -817,7 +817,7 @@ async def play_command(interaction: discord.Interaction, search: str):
 
         # Cek apakah queue tidak kosong dan tidak ada lagu yang sedang diputar
         if music_queue and not interaction.guild.voice_client.is_playing():
-            await next_song(interaction
+            await next_song(interaction)
             # Memutar lagu pertama di queue
             # next_song_url = music_queue.pop(0)
             # await play_music(interaction, next_song_url)
