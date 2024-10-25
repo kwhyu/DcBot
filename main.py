@@ -819,7 +819,7 @@ async def autoplay_command(interaction: discord.Interaction):
         status = "enabled" if autoplay_enabled else "disabled"
         await interaction.response.send_message(f"Autoplay telah {status}.", ephemeral=False)
     except Exception as e:
-        await interaction.response.send_message(f"Error: {e}", ephemeral=True))
+        await interaction.response.send_message(f"Error: {e}", ephemeral=True)
 
 # Command untuk stop lagu
 @client.tree.command(name="stop", description="Stop the currently playing song")
