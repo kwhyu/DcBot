@@ -789,15 +789,26 @@ async def play_command(interaction: discord.Interaction, search: str):
         # Tambahkan lagu ke queue
         music_queue.append(url)  # Simpan URL di queue
 
-        # If there's no song currently playing, play the first song in the queue
-        if not interaction.guild.voice_client.is_playing():
+        # Cek apakah queue tidak kosong dan tidak ada lagu yang sedang diputar
+        if music_queue and not interaction.guild.voice_client.is_playing():
+            # Memutar lagu pertama di queue
             next_song_url = music_queue.pop(0)
-            await play_command(interaction, music_queue.pop(0))  # Play the first song in the queue
+            await play_music(interaction, next_song_url)
             await interaction.followup.send("Sedang memutar lagu pertama di antrian.", ephemeral=False)
         else:
-            # Inform the user of the song’s position in the queue
+            # Informasikan posisi lagu di queue
             queue_position = len(music_queue)
             await interaction.followup.send(f"Lagu telah ditambahkan ke antrian di posisi ke-{queue_position}.", ephemeral=False)
+
+        # # If there's no song currently playing, play the first song in the queue
+        # if not interaction.guild.voice_client.is_playing():
+        #     next_song_url = music_queue.pop(0)
+        #     await play_command(interaction, music_queue.pop(0))  # Play the first song in the queue
+        #     await interaction.followup.send("Sedang memutar lagu pertama di antrian.", ephemeral=False)
+        # else:
+        #     # Inform the user of the song’s position in the queue
+        #     queue_position = len(music_queue)
+        #     await interaction.followup.send(f"Lagu telah ditambahkan ke antrian di posisi ke-{queue_position}.", ephemeral=False)
         
         # Informasi posisi queue
         # queue_position = len(music_queue)
