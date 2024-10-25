@@ -627,6 +627,9 @@ async def start_game(interaction: discord.Interaction):
 music_queue = []
 autoplay_enabled = False
 stay_in_channel = False
+# last_played_url = None
+last_search_time = 0 
+search_cooldown = 5
 
 # YoutubeDL options
 ydl_opts = {
@@ -643,16 +646,37 @@ async def play_music(interaction: discord.Interaction, url: str):
             url2 = info['url']
             source = await discord.FFmpegOpusAudio.from_probe(url2)
             voice_client.play(source, after=lambda e: asyncio.run_coroutine_threadsafe(next_song(interaction), client.loop))
-            await interaction.followup.send(f"Memutar lagu: {info['title']}", ephemeral=True)
+            await interaction.followup.send(f"Memutar lagu: {info['title']}", ephemeral=False)
     except Exception as e:
         await interaction.followup.send(f"Terjadi kesalahan: {e}", ephemeral=True)
 
 # Fungsi untuk menemukan lagu berikutnya
+# async def find_next_song(current_song_title: str):
+#     query_string = urllib.parse.urlencode({'search_query': current_song_title + ' next'})
+#     html_content = urllib.request.urlopen('http://www.youtube.com/results?' + query_string)
+#     search_results = re.findall(r'/watch\?v=(.{11})', html_content.read().decode())
+
+    
+#     return 'http://www.youtube.com/watch?v=' + search_results[0]
+
+# Fungsi untuk menemukan lagu berikutnya dengan jeda antar pencarian
 async def find_next_song(current_song_title: str):
+    global last_search_time
+    current_time = time.time()
+    
+    # Jika pencarian dilakukan terlalu cepat, tunggu sampai jeda terpenuhi
+    if current_time - last_search_time < search_cooldown:
+        await asyncio.sleep(search_cooldown - (current_time - last_search_time))
+
+    # Lakukan pencarian YouTube
     query_string = urllib.parse.urlencode({'search_query': current_song_title + ' next'})
     html_content = urllib.request.urlopen('http://www.youtube.com/results?' + query_string)
     search_results = re.findall(r'/watch\?v=(.{11})', html_content.read().decode())
-    return 'http://www.youtube.com/watch?v=' + search_results[0]
+    
+    next_song_url = 'http://www.youtube.com/watch?v=' + search_results[0]
+    
+    last_search_time = time.time()  # Update waktu pencarian terakhir
+    return next_song_url
 
 # Fungsi untuk memainkan lagu berikutnya
 # async def next_song(interaction: discord.Interaction):
@@ -662,20 +686,46 @@ async def find_next_song(current_song_title: str):
 #         await play_music(interaction, next_song_url)
 
 # Fungsi untuk memainkan lagu berikutnya
+# async def next_song(interaction: discord.Interaction):
+#     global music_queue
+#     if music_queue:
+#         # Play the next song in the queue if available
+#         next_song_url = music_queue.pop(0)
+#         await play_music(interaction, next_song_url)
+#     elif autoplay_enabled:
+#         # Autoplay is enabled and no songs in queue, search for a related song
+#         current_song_title = interaction.guild.voice_client.source.title
+#         next_song_url = await find_next_song(current_song_title)
+#         await play_music(interaction, next_song_url)
+#     else:
+#         # Stop playing if queue is empty and autoplay is disabled
+#         await interaction.followup.send("Tidak ada lagu di antrian dan autoplay dinonaktifkan.", ephemeral=True)
+
+# Fungsi untuk memainkan lagu berikutnya atau mencari lagu secara otomatis
 async def next_song(interaction: discord.Interaction):
-    global music_queue
+    global music_queue, autoplay_enabled
+
     if music_queue:
-        # Play the next song in the queue if available
+        # Jika ada lagu di antrian, mainkan lagu berikutnya
         next_song_url = music_queue.pop(0)
-        await play_music(interaction, next_song_url)
+        await play_command(interaction, next_song_url)
     elif autoplay_enabled:
-        # Autoplay is enabled and no songs in queue, search for a related song
-        current_song_title = interaction.guild.voice_client.source.title
-        next_song_url = await find_next_song(current_song_title)
-        await play_music(interaction, next_song_url)
+        # Jika autoplay aktif dan tidak ada lagu di queue, cari rekomendasi lagu berikutnya
+        try:
+            current_song_title = interaction.guild.voice_client.source.title
+            next_song_url = await find_next_song(current_song_title)
+            await play_command(interaction, next_song_url)
+        except Exception as e:
+            await interaction.followup.send(f"Autoplay error: {e}", ephemeral=True)
     else:
-        # Stop playing if queue is empty and autoplay is disabled
-        await interaction.followup.send("Tidak ada lagu di antrian dan autoplay dinonaktifkan.", ephemeral=True)
+        # Jika queue kosong dan autoplay dinonaktifkan
+        if not stay_in_channel:
+            # Jika 24/7 mode nonaktif, bot akan keluar dari channel
+            await leave_voice_channel(interaction.guild)
+        else:
+            # Jika 24/7 mode aktif, bot tetap di channel tanpa memutar lagu
+            await interaction.followup.send("Queue kosong, menunggu perintah selanjutnya.", ephemeral=True)
+
 
 # Command untuk memutar lagu dari URL atau nama lagu
 # @client.tree.command(name="play", description="Play a song from YouTube using URL or song name")
@@ -741,7 +791,8 @@ async def play_command(interaction: discord.Interaction, search: str):
 
         # If there's no song currently playing, play the first song in the queue
         if not interaction.guild.voice_client.is_playing():
-            await play_music(interaction, music_queue.pop(0))  # Play the first song in the queue
+            next_song_url = music_queue.pop(0)
+            await play_command(interaction, music_queue.pop(0))  # Play the first song in the queue
             await interaction.followup.send("Sedang memutar lagu pertama di antrian.", ephemeral=False)
         else:
             # Inform the user of the song’s position in the queue
@@ -759,16 +810,16 @@ async def play_command(interaction: discord.Interaction, search: str):
         await interaction.followup.send(f"Terjadi kesalahan: {e}", ephemeral=True)
 
 
-# Command to toggle autoplay
+# Command untuk toggle autoplay
 @client.tree.command(name="autoplay", description="Enable or disable autoplay")
 async def autoplay_command(interaction: discord.Interaction):
     global autoplay_enabled
     try:
         autoplay_enabled = not autoplay_enabled
         status = "enabled" if autoplay_enabled else "disabled"
-        await interaction.response.send_message(f"Autoplay has been {status}.", ephemeral=True)
+        await interaction.response.send_message(f"Autoplay telah {status}.", ephemeral=False)
     except Exception as e:
-        await interaction.response.send_message(f"Error: {e}", ephemeral=True)
+        await interaction.response.send_message(f"Error: {e}", ephemeral=True))
 
 # Command untuk stop lagu
 @client.tree.command(name="stop", description="Stop the currently playing song")
@@ -805,6 +856,10 @@ async def stay_command(interaction: discord.Interaction):
         stay_in_channel = not stay_in_channel
         status = "enabled" if stay_in_channel else "disabled"
         await interaction.response.send_message(f"24-7 mode has been {status}.", ephemeral=True)
+        
+        # Jika 24-7 mode dinonaktifkan dan tidak ada lagu yang diputar, bot akan keluar dari channel
+        if not stay_in_channel and not interaction.guild.voice_client.is_playing():
+            await leave_voice_channel(interaction.guild)
     except Exception as e:
         await interaction.response.send_message(f"Error: {e}", ephemeral=True)
 
