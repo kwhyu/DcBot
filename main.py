@@ -626,6 +626,7 @@ async def start_game(interaction: discord.Interaction):
 # Queue untuk autoplay
 music_queue = []
 autoplay_enabled = False
+stay_in_channel = False
 
 # YoutubeDL options
 ydl_opts = {
@@ -654,18 +655,69 @@ async def find_next_song(current_song_title: str):
     return 'http://www.youtube.com/watch?v=' + search_results[0]
 
 # Fungsi untuk memainkan lagu berikutnya
+# async def next_song(interaction: discord.Interaction):
+#     global music_queue
+#     if autoplay_enabled and music_queue:
+#         next_song_url = music_queue.pop(0)
+#         await play_music(interaction, next_song_url)
+
+# Fungsi untuk memainkan lagu berikutnya
 async def next_song(interaction: discord.Interaction):
     global music_queue
-    if autoplay_enabled and music_queue:
+    if music_queue:
+        # Play the next song in the queue if available
         next_song_url = music_queue.pop(0)
         await play_music(interaction, next_song_url)
+    elif autoplay_enabled:
+        # Autoplay is enabled and no songs in queue, search for a related song
+        current_song_title = interaction.guild.voice_client.source.title
+        next_song_url = await find_next_song(current_song_title)
+        await play_music(interaction, next_song_url)
+    else:
+        # Stop playing if queue is empty and autoplay is disabled
+        await interaction.followup.send("Tidak ada lagu di antrian dan autoplay dinonaktifkan.", ephemeral=True)
+
+# Command untuk memutar lagu dari URL atau nama lagu
+# @client.tree.command(name="play", description="Play a song from YouTube using URL or song name")
+# async def play_command(interaction: discord.Interaction, search: str):
+#     global music_queue
+#     try:
+#         await interaction.response.defer(ephemeral=False)
+#         if interaction.guild.voice_client is None:
+#             if interaction.user.voice:
+#                 channel = interaction.user.voice.channel
+#                 await channel.connect()
+#             else:
+#                 await interaction.followup.send("Kamu harus berada di voice channel dulu!", ephemeral=True)
+#                 return
+
+#         # Jika input adalah URL YouTube
+#         if "youtube.com/watch?v=" in search or "youtu.be/" in search:
+#             url = search
+#         else:
+#             # Pencarian di YouTube
+#             query_string = urllib.parse.urlencode({'search_query': search})
+#             html_content = urllib.request.urlopen('http://www.youtube.com/results?' + query_string)
+#             search_results = re.findall(r'/watch\?v=(.{11})', html_content.read().decode())
+#             url = 'http://www.youtube.com/watch?v=' + search_results[0]
+
+#         # Tambahkan lagu ke queue
+#         music_queue.append(url)  # Simpan URL di queue
+
+#         # Memutar lagu pertama dalam queue
+#         if not interaction.guild.voice_client.is_playing():
+#             await play_music(interaction, music_queue.pop(0))  # Putar lagu pertama dalam queue
+#     except Exception as e:
+#         await interaction.followup.send(f"Terjadi kesalahan: {e}", ephemeral=True)
 
 # Command untuk memutar lagu dari URL atau nama lagu
 @client.tree.command(name="play", description="Play a song from YouTube using URL or song name")
 async def play_command(interaction: discord.Interaction, search: str):
     global music_queue
     try:
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer(ephemeral=False)
+        
+        # Connect bot to voice channel if not already connected
         if interaction.guild.voice_client is None:
             if interaction.user.voice:
                 channel = interaction.user.voice.channel
@@ -687,22 +739,36 @@ async def play_command(interaction: discord.Interaction, search: str):
         # Tambahkan lagu ke queue
         music_queue.append(url)  # Simpan URL di queue
 
-        # Memutar lagu pertama dalam queue
+        # If there's no song currently playing, play the first song in the queue
         if not interaction.guild.voice_client.is_playing():
-            await play_music(interaction, music_queue.pop(0))  # Putar lagu pertama dalam queue
+            await play_music(interaction, music_queue.pop(0))  # Play the first song in the queue
+            await interaction.followup.send("Sedang memutar lagu pertama di antrian.", ephemeral=False)
+        else:
+            # Inform the user of the song’s position in the queue
+            queue_position = len(music_queue)
+            await interaction.followup.send(f"Lagu telah ditambahkan ke antrian di posisi ke-{queue_position}.", ephemeral=False)
+        
+        # Informasi posisi queue
+        # queue_position = len(music_queue)
+        # await interaction.followup.send(f"Lagu telah ditambahkan ke antrian di posisi ke-{queue_position}.")
+
+        # Jika tidak ada lagu yang sedang diputar, mulai memutar lagu pertama dalam queue
+        # if not interaction.guild.voice_client.is_playing():
+        #     await play_music(interaction, music_queue.pop(0))  # Putar lagu pertama dalam queue
     except Exception as e:
         await interaction.followup.send(f"Terjadi kesalahan: {e}", ephemeral=True)
 
-# Command untuk mengaktifkan atau menonaktifkan autoplay
+
+# Command to toggle autoplay
 @client.tree.command(name="autoplay", description="Enable or disable autoplay")
 async def autoplay_command(interaction: discord.Interaction):
     global autoplay_enabled
     try:
         autoplay_enabled = not autoplay_enabled
-        status = "diaktifkan" if autoplay_enabled else "dinonaktifkan"
-        await interaction.response.send_message(f"Autoplay telah {status}.", ephemeral=True)
+        status = "enabled" if autoplay_enabled else "disabled"
+        await interaction.response.send_message(f"Autoplay has been {status}.", ephemeral=True)
     except Exception as e:
-        await interaction.response.send_message(f"Terjadi kesalahan: {e}", ephemeral=True)
+        await interaction.response.send_message(f"Error: {e}", ephemeral=True)
 
 # Command untuk stop lagu
 @client.tree.command(name="stop", description="Stop the currently playing song")
@@ -718,6 +784,29 @@ async def stop_command(interaction: discord.Interaction):
             await interaction.response.send_message("Tidak ada lagu yang sedang diputar.", ephemeral=True)
     except Exception as e:
         await interaction.response.send_message(f"Terjadi kesalahan: {e}", ephemeral=True)
+
+# Command to skip the current song and play the next one in queue
+@client.tree.command(name="skip", description="Skip the currently playing song")
+async def skip_command(interaction: discord.Interaction):
+    try:
+        if interaction.guild.voice_client and interaction.guild.voice_client.is_playing():
+            interaction.guild.voice_client.stop()  # Stop current song to trigger `next_song`
+            await interaction.response.send_message("Skipped the current song.", ephemeral=True)
+        else:
+            await interaction.response.send_message("No song is currently playing to skip.", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"Error: {e}", ephemeral=True)
+
+# Command to toggle 24-7 mode
+@client.tree.command(name="24-7", description="Keep the bot in the voice channel even when empty")
+async def stay_command(interaction: discord.Interaction):
+    global stay_in_channel
+    try:
+        stay_in_channel = not stay_in_channel
+        status = "enabled" if stay_in_channel else "disabled"
+        await interaction.response.send_message(f"24-7 mode has been {status}.", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"Error: {e}", ephemeral=True)
 
 
 #LEVELING
@@ -741,6 +830,17 @@ async def check_level(interaction: discord.Interaction):
         await interaction.response.send_message(f"{interaction.user.mention}, you have sent {chat_count} messages and are currently at level {level}.")
     else:
         await interaction.response.send_message(f"{interaction.user.mention}, you have not sent any messages yet.")
+
+
+# Helper function to check connection stability
+@client.event
+async def on_voice_state_update(member, before, after):
+    voice_client = member.guild.voice_client
+    # Disconnect if bot is alone in channel and 24-7 mode is not enabled
+    if voice_client and len(voice_client.channel.members) == 1 and not stay_in_channel:
+        await asyncio.sleep(60)  # Wait for a minute to see if anyone joins
+        if len(voice_client.channel.members) == 1:
+            await voice_client.disconnect()
 
 # MAIN
 
