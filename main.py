@@ -622,6 +622,16 @@ async def start_game(interaction: discord.Interaction):
     await game_loop(game, interaction)
 
 
+# Command to provide the link to the FPS game
+@client.tree.command(name="fps", description="Get the link to the FPS game")
+async def game_link_command(interaction: discord.Interaction):
+    try:
+        game_url = "https://fpsaimlabfakecopyoioi.netlify.app/"
+        await interaction.response.send_message(f"P main gim: {game_url}", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"Error: {e}", ephemeral=True)
+
+
 #YOUTUBE
 
 # Queue untuk autoplay
