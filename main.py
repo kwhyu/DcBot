@@ -616,7 +616,7 @@ async def start_game(interaction: discord.Interaction):
     view = SnakeControlView(game)
     
     # Kirim pesan pertama dengan ephemeral=True, hanya terlihat oleh pemain
-    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+    await interaction.response.send_message(embed=embed, view=view, ephemeral=False)
     
     # Mulai loop permainan otomatis
     await game_loop(game, interaction)
