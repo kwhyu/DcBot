@@ -18,6 +18,7 @@ import re
 from pymongo import MongoClient
 import math
 import time
+import requests
 
 # Memuat token dari file .env
 #load_dotenv()
@@ -847,9 +848,14 @@ async def post_command(interaction: discord.Interaction, name: str, description:
         "description": description
     }
 
+    # Menambahkan header Content-Type: application/json
+    headers = {
+        "Content-Type": "application/json"
+    }
+
     # Kirim permintaan POST ke API
     try:
-        response = requests.post(API_URL_POST, json=data)
+        response = requests.post(API_URL_POST, json=data, headers=headers)
         response_data = response.json()
 
         # Cek jika request berhasil
