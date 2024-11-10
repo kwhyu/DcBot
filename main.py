@@ -49,6 +49,9 @@ CUSTOM_ACTIVITY_ID = os.getenv('CUSTOM_ACTIVITY_ID')
 #Mongo DB
 MONGO_URL = os.getenv('MONGO_URL')
 
+#API
+API_URL_POST = os.getenv("API_URL_POST")
+
 # Ensure the variables are correctly loaded
 if not MONGO_URL:
     raise ValueError("MongoDB URL is not set in the environment variables.")
@@ -833,6 +836,37 @@ async def on_voice_state_update(member, before, after):
         await asyncio.sleep(60)  # Wait for a minute to see if anyone joins
         if len(voice_client.channel.members) == 1:
             await voice_client.disconnect()
+
+
+#API
+@client.tree.command(name="post", description="Create a new item in the API")
+# @app_commands.describe(name="Name of the item", description="Description of the item")
+async def post_command(interaction: discord.Interaction, name: str, description: str):
+    # Siapkan data untuk dikirim ke API
+    data = {
+        "name": name,
+        "description": description
+    }
+
+    # Kirim permintaan POST ke API
+    try:
+        response = requests.post(API_URL_POST, json=data)
+        response_data = response.json()
+
+        # Cek jika request berhasil
+        if response.status_code == 200:
+            await interaction.response.send_message(
+                f"Item created successfully!\n**Name:** {response_data['name']}\n**Description:** {response_data['description']}"
+            )
+        else:
+            # Tampilkan error dari response API
+            await interaction.response.send_message(
+                f"Failed to create item. Error: {response_data.get('error', 'Unknown error')}"
+            )
+    except requests.exceptions.RequestException as e:
+        # Tampilkan pesan error jika request gagal
+        await interaction.response.send_message(f"An error occurred: {str(e)}")
+
 
 # MAIN
 
