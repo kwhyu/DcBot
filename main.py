@@ -840,7 +840,7 @@ async def on_voice_state_update(member, before, after):
 
 #API
 @client.tree.command(name="post", description="Create a new item in the API")
-# @app_commands.describe(name="Name of the item", description="Description of the item")
+@app_commands.describe(name="Name of the item", description="Description of the item")
 async def post_command(interaction: discord.Interaction, name: str, description: str):
     # Siapkan data untuk dikirim ke API
     data = {
