@@ -52,6 +52,8 @@ MONGO_URL = os.getenv('MONGO_URL')
 
 #API
 API_URL_POST = os.getenv("API_URL_POST")
+API_URL_UPDATE = os.getenv("API_URL_UPDATE")
+API_URL_DELETE = os.getenv("API_URL_DELETE")
 
 # Ensure the variables are correctly loaded
 if not MONGO_URL:
@@ -895,7 +897,8 @@ async def update_command(interaction: discord.Interaction, id: int, name: str, d
     }
     headers = {"Content-Type": "application/json"}
     try:
-        response = requests.put(f"{API_URL_POST}/items/{id}", json=data, headers=headers)
+        # Menggunakan URL dengan ID untuk update
+        response = requests.put(f"{API_URL_UPDATE}/{id}", json=data, headers=headers)
         response_data = response.json()
         if response.status_code == 200:
             await interaction.response.send_message(
@@ -913,7 +916,8 @@ async def update_command(interaction: discord.Interaction, id: int, name: str, d
 async def delete_command(interaction: discord.Interaction, id: int):
     headers = {"Content-Type": "application/json"}
     try:
-        response = requests.delete(f"{API_URL_POST}/items/{id}", headers=headers)
+        # Menggunakan URL dengan ID untuk delete
+        response = requests.delete(f"{API_URL_DELETE}/{id}", headers=headers)
         if response.status_code == 200:
             await interaction.response.send_message(f"Item with ID {id} deleted successfully.")
         else:
