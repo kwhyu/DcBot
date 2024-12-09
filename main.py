@@ -51,9 +51,9 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 MONGO_URL = os.getenv('MONGO_URL')
 
 #API
-API_URL_POST = os.getenv("API_URL_POST")
-API_URL_UPDATE = os.getenv("API_URL_UPDATE")
-API_URL_DELETE = os.getenv("API_URL_DELETE")
+# API_URL_POST = os.getenv("API_URL_POST")
+# API_URL_UPDATE = os.getenv("API_URL_UPDATE")
+# API_URL_DELETE = os.getenv("API_URL_DELETE")
 
 # Ensure the variables are correctly loaded
 if not MONGO_URL:
@@ -842,91 +842,91 @@ async def on_voice_state_update(member, before, after):
 
 
 #API
-@client.tree.command(name="post", description="Create a new item in the API")
-async def post_command(interaction: discord.Interaction, name: str, description: str):
-    # Siapkan data untuk dikirim ke API
-    data = {
-        "name": name,
-        "description": description
-    }
+# @client.tree.command(name="post", description="Create a new item in the API")
+# async def post_command(interaction: discord.Interaction, name: str, description: str):
+#     # Siapkan data untuk dikirim ke API
+#     data = {
+#         "name": name,
+#         "description": description
+#     }
 
-    # Menambahkan header Content-Type: application/json
-    headers = {
-        "Content-Type": "application/json"
-    }
+#     # Menambahkan header Content-Type: application/json
+#     headers = {
+#         "Content-Type": "application/json"
+#     }
 
-    # Kirim permintaan POST ke API
-    try:
-        response = requests.post(API_URL_POST, json=data, headers=headers)
-        response_data = response.json()
+#     # Kirim permintaan POST ke API
+#     try:
+#         response = requests.post(API_URL_POST, json=data, headers=headers)
+#         response_data = response.json()
 
-        # Cek jika request berhasil
-        if response.status_code == 200:
-            await interaction.response.send_message(
-                f"Item created successfully!\n**Name:** {response_data['name']}\n**Description:** {response_data['description']}"
-            )
-        else:
-            # Tampilkan error dari response API
-            await interaction.response.send_message(
-                f"Failed to create item. Error: {response_data.get('error', 'Unknown error')}"
-            )
-    except requests.exceptions.RequestException as e:
-        # Tampilkan pesan error jika request gagal
-        await interaction.response.send_message(f"An error occurred: {str(e)}")
+#         # Cek jika request berhasil
+#         if response.status_code == 200:
+#             await interaction.response.send_message(
+#                 f"Item created successfully!\n**Name:** {response_data['name']}\n**Description:** {response_data['description']}"
+#             )
+#         else:
+#             # Tampilkan error dari response API
+#             await interaction.response.send_message(
+#                 f"Failed to create item. Error: {response_data.get('error', 'Unknown error')}"
+#             )
+#     except requests.exceptions.RequestException as e:
+#         # Tampilkan pesan error jika request gagal
+#         await interaction.response.send_message(f"An error occurred: {str(e)}")
 
-# Command untuk GET (Retrieve all items)
-@client.tree.command(name="get", description="Retrieve all items from the API")
-async def get_command(interaction: discord.Interaction):
-    try:
-        response = requests.get(API_URL_POST)
-        items = response.json()
-        if response.status_code == 200:
-            item_list = "\n".join([f"ID: {item['id']} | Name: {item['name']} | Description: {item['description']}" for item in items])
-            await interaction.response.send_message(f"**Items in Database:**\n{item_list}")
-        else:
-            await interaction.response.send_message("Failed to retrieve items.")
-    except requests.exceptions.RequestException as e:
-        await interaction.response.send_message(f"An error occurred: {str(e)}")
+# # Command untuk GET (Retrieve all items)
+# @client.tree.command(name="get", description="Retrieve all items from the API")
+# async def get_command(interaction: discord.Interaction):
+#     try:
+#         response = requests.get(API_URL_POST)
+#         items = response.json()
+#         if response.status_code == 200:
+#             item_list = "\n".join([f"ID: {item['id']} | Name: {item['name']} | Description: {item['description']}" for item in items])
+#             await interaction.response.send_message(f"**Items in Database:**\n{item_list}")
+#         else:
+#             await interaction.response.send_message("Failed to retrieve items.")
+#     except requests.exceptions.RequestException as e:
+#         await interaction.response.send_message(f"An error occurred: {str(e)}")
 
-# Command untuk UPDATE (Update item by ID)
-@client.tree.command(name="update", description="Update an existing item in the API")
-async def update_command(interaction: discord.Interaction, id: int, name: str, description: str):
-    data = {
-        "name": name,
-        "description": description
-    }
-    headers = {"Content-Type": "application/json"}
-    try:
-        # Menggunakan URL dengan ID untuk update
-        response = requests.put(f"{API_URL_UPDATE}/{id}", json=data, headers=headers)
-        response_data = response.json()
-        if response.status_code == 200:
-            await interaction.response.send_message(
-                f"Item updated successfully!\n**ID:** {response_data['id']}\n**Name:** {response_data['name']}\n**Description:** {response_data['description']}"
-            )
-        else:
-            await interaction.response.send_message(
-                f"Failed to update item. Error: {response_data.get('error', 'Unknown error')}"
-            )
-    except requests.exceptions.RequestException as e:
-        await interaction.response.send_message(f"An error occurred: {str(e)}")
+# # Command untuk UPDATE (Update item by ID)
+# @client.tree.command(name="update", description="Update an existing item in the API")
+# async def update_command(interaction: discord.Interaction, id: int, name: str, description: str):
+#     data = {
+#         "name": name,
+#         "description": description
+#     }
+#     headers = {"Content-Type": "application/json"}
+#     try:
+#         # Menggunakan URL dengan ID untuk update
+#         response = requests.put(f"{API_URL_UPDATE}/{id}", json=data, headers=headers)
+#         response_data = response.json()
+#         if response.status_code == 200:
+#             await interaction.response.send_message(
+#                 f"Item updated successfully!\n**ID:** {response_data['id']}\n**Name:** {response_data['name']}\n**Description:** {response_data['description']}"
+#             )
+#         else:
+#             await interaction.response.send_message(
+#                 f"Failed to update item. Error: {response_data.get('error', 'Unknown error')}"
+#             )
+#     except requests.exceptions.RequestException as e:
+#         await interaction.response.send_message(f"An error occurred: {str(e)}")
 
-# Command untuk DELETE (Delete item by ID)
-@client.tree.command(name="delete", description="Delete an item from the API by ID")
-async def delete_command(interaction: discord.Interaction, id: int):
-    headers = {"Content-Type": "application/json"}
-    try:
-        # Menggunakan URL dengan ID untuk delete
-        response = requests.delete(f"{API_URL_DELETE}/{id}", headers=headers)
-        if response.status_code == 200:
-            await interaction.response.send_message(f"Item with ID {id} deleted successfully.")
-        else:
-            response_data = response.json()
-            await interaction.response.send_message(
-                f"Failed to delete item. Error: {response_data.get('error', 'Unknown error')}"
-            )
-    except requests.exceptions.RequestException as e:
-        await interaction.response.send_message(f"An error occurred: {str(e)}")
+# # Command untuk DELETE (Delete item by ID)
+# @client.tree.command(name="delete", description="Delete an item from the API by ID")
+# async def delete_command(interaction: discord.Interaction, id: int):
+#     headers = {"Content-Type": "application/json"}
+#     try:
+#         # Menggunakan URL dengan ID untuk delete
+#         response = requests.delete(f"{API_URL_DELETE}/{id}", headers=headers)
+#         if response.status_code == 200:
+#             await interaction.response.send_message(f"Item with ID {id} deleted successfully.")
+#         else:
+#             response_data = response.json()
+#             await interaction.response.send_message(
+#                 f"Failed to delete item. Error: {response_data.get('error', 'Unknown error')}"
+#             )
+#     except requests.exceptions.RequestException as e:
+#         await interaction.response.send_message(f"An error occurred: {str(e)}")
 
 
 # MAIN
