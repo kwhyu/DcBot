@@ -44,8 +44,8 @@ MERGE_RULES = {
 load_dotenv()
 
 TOKEN = os.getenv('DISCORD_TOKEN')
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-CUSTOM_ACTIVITY_ID = os.getenv('CUSTOM_ACTIVITY_ID')
+# OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+# CUSTOM_ACTIVITY_ID = os.getenv('CUSTOM_ACTIVITY_ID')
 
 #Mongo DB
 MONGO_URL = os.getenv('MONGO_URL')
