@@ -8,7 +8,7 @@ from discord import FFmpegPCMAudio
 import random
 from easy_pil import Editor, load_image_async, Font
 from responses import get_response
-import openai
+# import openai
 import random
 import asyncio
 from discord.ui import Button, View
@@ -102,7 +102,7 @@ class Player:
 # Store players in an active game
 active_games = {}
 
-openai.api_key = OPENAI_API_KEY
+# openai.api_key = OPENAI_API_KEY
 
 playlist = ['Kerusu/Kerusu1.mp3', 'Kerusu/Kerusu2.mp3', 'Kerusu/Kerusu3.mp3',
             'Kerusu/Kerusu4.mp3', 'Kerusu/Kerusu5.mp3', 'Kerusu/Kerusu6.mp3',
